@@ -4,7 +4,6 @@ import argparse
 from collections.abc import Sequence
 
 import nbformat
-
 from utils import relative_path, repo_path
 
 COLAB_HEADER = f"""import sys

@@ -1,0 +1,6 @@
+- id: check-notebooks
+  name: check notebooks
+  description: check Jupyter Notebook contents
+  entry: check_notebooks
+  language: python
+  stages: [pre-commit]

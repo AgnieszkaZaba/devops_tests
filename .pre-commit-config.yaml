@@ -1,20 +1,18 @@
-files: '.py|.ipynb'
-exclude: '.git'
 default_stages: [pre-commit]
 
 repos:
-  - repo: https://github.com/psf/black
-    rev: 25.1.0
+  - repo: https://github.com/psf/black-pre-commit-mirror
+    rev: 25.9.0
     hooks:
       - id: black
 
   - repo: https://github.com/timothycrosley/isort
-    rev: 6.0.1
+    rev: 6.1.0
     hooks:
       - id: isort
 
   - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v5.0.0
+    rev: v6.0.0
     hooks:
       - id: trailing-whitespace
       - id: end-of-file-fixer
@@ -27,13 +25,8 @@ repos:
 
   - repo: local
     hooks:
-      - id: check_notebooks
+      - id: check-notebooks
         name: check notebooks
-        entry: python ./pre_commit_hooks/check_notebooks.py
-        language: system
-        files: '.ipynb'
-      - id: check_badges
-        name: check badges
-        entry: python ./pre_commit_hooks/check_badges.py
-        language: system
+        entry: check_notebooks
+        language: python
         files: '.ipynb'

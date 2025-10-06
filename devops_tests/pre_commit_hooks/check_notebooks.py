@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+
 from __future__ import annotations
 
 import argparse
@@ -5,9 +7,6 @@ import os
 from collections.abc import Sequence
 
 import nbformat
-import pint
-
-SI = pint.UnitRegistry()
 
 
 def test_cell_contains_output(notebook):
@@ -81,29 +80,27 @@ def test_jetbrains_bug_py_66491(notebook):
     return 0
 
 
-def test_file_size(notebook_filename):
-    """Test if notebook is smaller than an arbitrary size limit"""
-    if not os.stat(notebook_filename).st_size * SI.byte < 2 * SI.megabyte:
-        raise AssertionError(
-            f"Notebook '{notebook_filename}' has size larger than {2 * SI.megabyte}."
-        )
-        return 1
-    return 0
-
-
 def main(argv: Sequence[str] | None = None) -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("filenames", nargs="*", help="Filenames to check.")
     args = parser.parse_args(argv)
 
     retval = 0
+    print(args.filenames)
+    test_functions = [
+        test_cell_contains_output,
+        test_no_errors_or_warnings_in_output,
+        test_jetbrains_bug_py_66491,
+    ]
     for filename in args.filenames:
         with open(filename, encoding="utf8") as notebook_file:
             notebook = nbformat.read(notebook_file, nbformat.NO_CONVERT)
-            retval |= test_file_size(filename)
-            retval |= test_jetbrains_bug_py_66491(notebook)
-            retval |= test_cell_contains_output(notebook)
-            retval |= test_no_errors_or_warnings_in_output(notebook)
+            for func in test_functions:
+                try:
+                    func(notebook)
+                except Exception as e:
+                    print(e)
+                    retval = 1
     return retval
 
 

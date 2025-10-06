@@ -1,0 +1,29 @@
+[build-system]
+requires = ["setuptools >= 77.0.3"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+packages = ['devops_tests']
+
+[project]
+name = "devops_tests"
+dependencies = [
+    "pytest",
+    "ghapi",
+    "gitpython",
+    "binaryornot",
+    "nbconvert",
+    "jsonschema",
+    "jupyter-client>=8.0.2",
+    "ipython",
+    "ipykernel",
+]
+readme = "README.md"
+license = "GPL-3.0-only"
+authors = [
+    {name = "https://github.com/open-atmos/devops_tests/graphs/contributors", email = "sylwester.arabas@agh.edu.pl"}
+]
+dynamic = ['version']
+
+[project.scripts]
+check_notebooks = "devops_tests.pre_commit_hooks.check_notebooks:main"
