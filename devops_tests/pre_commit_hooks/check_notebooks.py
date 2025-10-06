@@ -86,7 +86,6 @@ def main(argv: Sequence[str] | None = None) -> int:
     args = parser.parse_args(argv)
 
     retval = 0
-    print(args.filenames)
     test_functions = [
         test_cell_contains_output,
         test_no_errors_or_warnings_in_output,
