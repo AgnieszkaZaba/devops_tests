@@ -14,7 +14,7 @@ def test_cell_contains_output(notebook):
     for cell in notebook.cells:
         if cell.cell_type == "code" and cell.source != "":
             if cell.execution_count is None:
-                raise Exception(f"{notebook}: Cell does not contain output!")
+                raise Exception("Cell does not contain output!")
 
 
 def test_no_errors_or_warnings_in_output(notebook):
@@ -97,7 +97,7 @@ def main(argv: Sequence[str] | None = None) -> int:
                 try:
                     func(notebook)
                 except Exception as e:
-                    print(e)
+                    print(f"{filename} : {e}")
                     retval = 1
     return retval
 
