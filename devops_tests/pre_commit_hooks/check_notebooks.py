@@ -41,7 +41,7 @@ def test_show_plot_used_instead_of_matplotlib(notebook):
                 or "from matplotlib import pyplot" in cell.source
             ):
                 matplot_used = True
-            if "show_plot()" in cell.source:
+            if "show_plot(" in cell.source:
                 show_plot_used = True
     if matplot_used and not show_plot_used:
         raise Exception(
@@ -61,7 +61,7 @@ def test_show_anim_used_instead_of_matplotlib(notebook):
                 or "from matplotlib import animation" in cell.source
             ):
                 matplot_used = True
-            if "show_anim()" in cell.source:
+            if "show_anim(" in cell.source:
                 show_anim_used = True
     if matplot_used and not show_anim_used:
         raise AssertionError(
