@@ -27,3 +27,4 @@ dynamic = ['version']
 
 [project.scripts]
 check_notebooks = "devops_tests.pre_commit_hooks.check_notebooks:main"
+check_badges = "devops_tests.pre_commit_hooks.check_badges:main"
