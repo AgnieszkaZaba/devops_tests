@@ -3,7 +3,7 @@ requires = ["setuptools >= 77.0.3"]
 build-backend = "setuptools.build_meta"
 
 [tool.setuptools]
-packages = ['devops_tests']
+packages = ['devops_tests', 'devops_tests.pre_commit_hooks']
 
 [project]
 name = "devops_tests"
