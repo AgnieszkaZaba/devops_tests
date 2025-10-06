@@ -19,32 +19,31 @@ def test_at_least_three_cells(notebook):
         raise Exception(f"Expected at least 3 cells, got {len(notebook.cells)}")
 
 
-def _preview_badge_markdown(absolute_path):
+def _preview_badge_markdown(file_path):
     svg_badge_url = (
         "https://img.shields.io/static/v1?"
         + "label=render%20on&logo=github&color=87ce3e&message=GitHub"
     )
     link = (
-        f"https://github.com/open-atmos/{repo_path().name}/blob/main/"
-        + f"{relative_path(absolute_path)}"
+        f"https://github.com/open-atmos/{repo_path().name}/blob/main/" + f"{file_path}"
     )
     return f"[![preview notebook]({svg_badge_url})]({link})"
 
 
-def _mybinder_badge_markdown(absolute_path):
+def _mybinder_badge_markdown(file_path):
     svg_badge_url = "https://mybinder.org/badge_logo.svg"
     link = (
         f"https://mybinder.org/v2/gh/open-atmos/{repo_path().name}.git/main?urlpath=lab/tree/"
-        + f"{relative_path(absolute_path)}"
+        + f"{file_path}"
     )
     return f"[![launch on mybinder.org]({svg_badge_url})]({link})"
 
 
-def _colab_badge_markdown(absolute_path):
+def _colab_badge_markdown(file_path):
     svg_badge_url = "https://colab.research.google.com/assets/colab-badge.svg"
     link = (
         f"https://colab.research.google.com/github/open-atmos/{repo_path().name}/blob/main/"
-        + f"{relative_path(absolute_path)}"
+        + f"{file_path}"
     )
     return f"[![launch on Colab]({svg_badge_url})]({link})"
 
