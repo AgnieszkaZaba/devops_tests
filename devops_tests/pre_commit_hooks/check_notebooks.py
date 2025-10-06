@@ -89,6 +89,8 @@ def main(argv: Sequence[str] | None = None) -> int:
         test_cell_contains_output,
         test_no_errors_or_warnings_in_output,
         test_jetbrains_bug_py_66491,
+        test_show_anim_used_instead_of_matplotlib,
+        test_show_plot_used_instead_of_matplotlib,
     ]
     for filename in args.filenames:
         with open(filename, encoding="utf8") as notebook_file:
