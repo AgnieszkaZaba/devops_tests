@@ -4,3 +4,4 @@
   entry: check_notebooks
   language: python
   stages: [pre-commit]
+  types: [jupyter]

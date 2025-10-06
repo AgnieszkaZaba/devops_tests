@@ -22,11 +22,3 @@ repos:
     rev: 2.0.1
     hooks:
       - id: enforce-notebook-run-order
-
-  - repo: local
-    hooks:
-      - id: check-notebooks
-        name: check notebooks
-        entry: check_notebooks
-        language: python
-        files: '.ipynb'
