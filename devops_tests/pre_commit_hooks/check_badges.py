@@ -13,6 +13,11 @@ if 'google.colab' in sys.modules:
     pip_install_on_colab('{repo_path().name}-examples')"""
 
 
+def test_at_least_three_cells(notebook):
+    if len(notebook.cells) < 3:
+        raise Exception(f"Expected at least 3 cells, got {len(notebook.cells)}")
+
+
 def _preview_badge_markdown(absolute_path):
     svg_badge_url = (
         "https://img.shields.io/static/v1?"
@@ -43,36 +48,49 @@ def _colab_badge_markdown(absolute_path):
     return f"[![launch on Colab]({svg_badge_url})]({link})"
 
 
-def test_first_cell_contains_three_badges(notebook_filename):
-    """checks if all notebooks feature Github preview, mybinder and Colab badges
+def test_first_cell_contains_three_badges(notebook_filename, notebook_content):
+    """checks if all notebooks feature GitHub preview, mybinder and Colab badges
     (in the first cell)"""
-    with open(notebook_filename, encoding="utf8") as fp:
-        nb = nbformat.read(fp, nbformat.NO_CONVERT)
-        assert len(nb.cells) > 0
-        assert nb.cells[0].cell_type == "markdown"
-        lines = nb.cells[0].source.split("\n")
-        assert len(lines) == 3
-        assert lines[0] == _preview_badge_markdown(notebook_filename)
-        assert lines[1] == _mybinder_badge_markdown(notebook_filename)
-        assert lines[2] == _colab_badge_markdown(notebook_filename)
+
+    asserts = ""
+    if notebook_content.cells[0].cell_type != "markdown":
+        asserts += "First cell is not a markdown\n"
+
+    lines = notebook_content.cells[0].source.split("\n")
+    if len(lines) != 3:
+        raise Exception(f"Expected 3 lines, got {len(lines)}")
+
+    preview_badge = _preview_badge_markdown(notebook_filename)
+    mybinder_badge = _mybinder_badge_markdown(notebook_filename)
+    colab_badge = _colab_badge_markdown(notebook_filename)
+
+    if lines[0] != preview_badge:
+        asserts += f"First badge should be {preview_badge}\n"
+    if lines[1] != mybinder_badge:
+        asserts += f"Second badge should be {mybinder_badge}\n"
+    if lines[2] != colab_badge:
+        asserts += f"Third badge should be {colab_badge}\n"
+
+    if asserts:
+        raise Exception(asserts)
 
 
-def test_second_cell_is_a_markdown_cell(notebook_filename):
+def test_second_cell_is_a_markdown_cell(notebook):
     """checks if all notebooks have their second cell with some markdown
     (hopefully clarifying what the example is about)"""
-    with open(notebook_filename, encoding="utf8") as fp:
-        nb = nbformat.read(fp, nbformat.NO_CONVERT)
-        assert len(nb.cells) > 1
-        assert nb.cells[1].cell_type == "markdown"
+    cell_type = notebook.cells[0].cell_type
+    if cell_type != "markdown":
+        raise Exception(f"Expected a markdown cell, got {cell_type}")
 
 
-def test_third_cell_contains_colab_header(notebook_filename):
+def test_third_cell_contains_colab_header(notebook):
     """checks if all notebooks feature a Colab-magic cell"""
-    with open(notebook_filename, encoding="utf8") as fp:
-        nb = nbformat.read(fp, nbformat.NO_CONVERT)
-        assert len(nb.cells) > 2
-        assert nb.cells[2].cell_type == "code"
-        assert nb.cells[2].source == COLAB_HEADER
+    cell_type = notebook.cells[2].cell_type
+    cell_source = notebook.cells[2].source
+    if cell_type != "code" or cell_source != COLAB_HEADER:
+        raise Exception(
+            f"Expected a code sell with Colab-magic, got cell type: {cell_type},\n cell source: {notebook.cells[2].source}"
+        )
 
 
 def main(argv: Sequence[str] | None = None) -> int:
@@ -81,13 +99,29 @@ def main(argv: Sequence[str] | None = None) -> int:
     args = parser.parse_args(argv)
 
     retval = 0
+    test_functions = [
+        test_first_cell_contains_three_badges,
+        test_second_cell_is_a_markdown_cell,
+        test_third_cell_contains_colab_header,
+    ]
     for filename in args.filenames:
-        try:
-            test_first_cell_contains_three_badges(filename)
-            test_second_cell_is_a_markdown_cell(filename)
-            test_third_cell_contains_colab_header(filename)
-        except ValueError as exc:
-            retval = 1
+        with open(filename, encoding="utf8") as notebook_file:
+            notebook = nbformat.read(notebook_file, nbformat.NO_CONVERT)
+            try:
+                test_at_least_three_cells(notebook)
+            except Exception as e:
+                print(f"{filename} : {e}")
+                retval = 1
+
+            for func in test_functions:
+                try:
+                    if func == test_first_cell_contains_three_badges:
+                        func(filename, notebook)
+                    else:
+                        func(notebook)
+                except Exception as e:
+                    print(f"{filename} : {e}")
+                    retval = 1
     return retval
 
 
