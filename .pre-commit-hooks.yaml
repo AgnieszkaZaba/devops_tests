@@ -5,3 +5,11 @@
   language: python
   stages: [pre-commit]
   types: [jupyter]
+
+- id: check-badges
+  name: check badges
+  description: check badges in Jupyter Notebook files
+  entry: check_badges
+  language: python
+  stages: [pre-commit]
+  types: [jupyter]
