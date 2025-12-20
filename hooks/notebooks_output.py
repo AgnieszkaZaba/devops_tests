@@ -23,5 +23,28 @@ def test_no_errors_or_warnings_in_output(notebook):
                         raise Exception(output["text"])
 
 
+def main(argv: Sequence[str] | None = None) -> int:
+    """test all notebooks"""
+    parser = argparse.ArgumentParser()
+    parser.add_argument("filenames", nargs="*", help="Filenames to check.")
+    args = parser.parse_args(argv)
+
+    retval = 0
+    test_functions = [
+        test_cell_contains_output,
+        test_no_errors_or_warnings_in_output,
+    ]
+    for filename in args.filenames:
+        with open(filename, encoding="utf8") as notebook_file:
+            notebook = nbformat.read(notebook_file, nbformat.NO_CONVERT)
+            for func in test_functions:
+                try:
+                    func(notebook)
+                except NotebookTestError as e:
+                    print(f"{filename} : {e}")
+                    retval = 1
+    return retval
+
+
 if __name__ == "__main__":
     raise SystemExit(main())
