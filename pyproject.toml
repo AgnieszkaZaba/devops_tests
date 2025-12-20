@@ -29,3 +29,4 @@ dynamic = ['version']
 [project.scripts]
 check_notebooks = "hooks.check_notebooks:main"
 check_badges = "hooks.check_badges:main"
+notebooks_output = "hooks.notebooks_output:main"
