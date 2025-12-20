@@ -13,3 +13,11 @@
   language: python
   stages: [pre-commit]
   types: [jupyter]
+
+- id: notebooks-output
+  name: notebooks output
+  description: check if notebooks are executed and without errors and warnings
+  entry: notebooks_output
+  language: python
+  stages: [pre-commit]
+  types: [jupyter]

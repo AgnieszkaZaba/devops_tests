@@ -38,3 +38,9 @@ repos:
         args: [--fix-header, --repo-name=devops_tests]
         language: python
         types: [jupyter]
+
+      - id: notebooks-output
+        name: notebooks output
+        entry: notebooks_output
+        language: python
+        types: [jupyter]
