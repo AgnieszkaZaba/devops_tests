@@ -42,6 +42,7 @@ def test_no_errors_or_warnings_in_output(notebook):
 
 
 def open_and_test_notebooks(argv, test_functions):
+    """Create argparser and run notebook tests"""
     parser = argparse.ArgumentParser()
     parser.add_argument("filenames", nargs="*", help="Filenames to check.")
     args = parser.parse_args(argv)
