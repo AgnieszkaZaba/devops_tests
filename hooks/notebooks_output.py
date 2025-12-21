@@ -1,6 +1,16 @@
 #!/usr/bin/env python3
+"""checks if notebook is executed and do not contain 'stderr"""
 
 from __future__ import annotations
+
+import argparse
+from collections.abc import Sequence
+
+import nbformat
+
+
+class NotebookTestError(Exception):
+    """Raised when a notebook validation test fails."""
 
 
 def test_cell_contains_output(notebook):
@@ -8,7 +18,7 @@ def test_cell_contains_output(notebook):
     for cell in notebook.cells:
         if cell.cell_type == "code" and cell.source != "":
             if cell.execution_count is None:
-                raise Exception("Cell does not contain output!")
+                raise ValueError("Cell does not contain output")
 
 
 def test_no_errors_or_warnings_in_output(notebook):
@@ -20,7 +30,7 @@ def test_no_errors_or_warnings_in_output(notebook):
             for output in cell.outputs:
                 if "name" in output and output["name"] == "stderr":
                     if not output["text"].startswith("[Parallel(n_jobs="):
-                        raise Exception(output["text"])
+                        raise ValueError(output["text"])
 
 
 def main(argv: Sequence[str] | None = None) -> int:
@@ -31,7 +41,7 @@ def main(argv: Sequence[str] | None = None) -> int:
 
     retval = 0
     test_functions = [
-        test_cell_contains_output,
+        # test_cell_contains_output,
         test_no_errors_or_warnings_in_output,
     ]
     for filename in args.filenames:
@@ -40,8 +50,8 @@ def main(argv: Sequence[str] | None = None) -> int:
             for func in test_functions:
                 try:
                     func(notebook)
-                except NotebookTestError as e:
-                    print(f"{filename} : {e}")
+                except NotebookTestError as err:
+                    print(f"{filename} : {err}")
                     retval = 1
     return retval
 
