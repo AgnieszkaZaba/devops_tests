@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# pylint: disable=duplicate-code #TODO #62
 """checks if notebook is executed and do not contain 'stderr"""
 
 from __future__ import annotations
@@ -40,27 +41,33 @@ def test_no_errors_or_warnings_in_output(notebook):
                         raise ValueError(f" Cell [{cell_idx}]: {out_text}")
 
 
-def main(argv: Sequence[str] | None = None) -> int:
-    """test all notebooks"""
+def open_and_test_notebooks(argv, test_functions):
     parser = argparse.ArgumentParser()
     parser.add_argument("filenames", nargs="*", help="Filenames to check.")
     args = parser.parse_args(argv)
 
     retval = 0
-    test_functions = [
-        test_cell_contains_output,
-        test_no_errors_or_warnings_in_output,
-    ]
     for filename in args.filenames:
         with open(filename, encoding="utf8") as notebook_file:
             notebook = nbformat.read(notebook_file, nbformat.NO_CONVERT)
             for func in test_functions:
                 try:
                     func(notebook)
-                except NotebookTestError as err:
-                    print(f"{filename} : {err}")
+                except NotebookTestError as e:
+                    print(f"{filename} : {e}")
                     retval = 1
     return retval
+
+
+def main(argv: Sequence[str] | None = None) -> int:
+    """test all notebooks"""
+    return open_and_test_notebooks(
+        argv=argv,
+        test_functions=[
+            test_cell_contains_output,
+            test_no_errors_or_warnings_in_output,
+        ],
+    )
 
 
 if __name__ == "__main__":

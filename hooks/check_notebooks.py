@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# pylint: disable=duplicate-code #TODO #62
 """
 Checks notebook execution status for Jupyter notebooks"""
 from __future__ import annotations
@@ -62,18 +63,12 @@ def test_jetbrains_bug_py_66491(notebook):
             )
 
 
-def main(argv: Sequence[str] | None = None) -> int:
-    """test all notebooks"""
+def open_and_test_notebooks(argv, test_functions):
     parser = argparse.ArgumentParser()
     parser.add_argument("filenames", nargs="*", help="Filenames to check.")
     args = parser.parse_args(argv)
 
     retval = 0
-    test_functions = [
-        test_jetbrains_bug_py_66491,
-        test_show_anim_used_instead_of_matplotlib,
-        test_show_plot_used_instead_of_matplotlib,
-    ]
     for filename in args.filenames:
         with open(filename, encoding="utf8") as notebook_file:
             notebook = nbformat.read(notebook_file, nbformat.NO_CONVERT)
@@ -84,6 +79,18 @@ def main(argv: Sequence[str] | None = None) -> int:
                     print(f"{filename} : {e}")
                     retval = 1
     return retval
+
+
+def main(argv: Sequence[str] | None = None) -> int:
+    """test all notebooks"""
+    return open_and_test_notebooks(
+        argv=argv,
+        test_functions=[
+            test_jetbrains_bug_py_66491,
+            test_show_anim_used_instead_of_matplotlib,
+            test_show_plot_used_instead_of_matplotlib,
+        ],
+    )
 
 
 if __name__ == "__main__":
