@@ -107,7 +107,7 @@ def expected_badges_for(
         repo_root = find_repo_root(notebook_path)
     try:
         rel = notebook_path.relative_to(repo_root)
-    except NotebookTestError(Exception):
+    except NotebookTestError:
         # fallback to just the given path
         rel = notebook_path
     absolute_path = rel.as_posix()
@@ -257,7 +257,7 @@ def main(argv: Sequence[str] | None = None) -> int:
 
             logger.info("%s: OK", filename)
             retval = retval or 0
-        except NotebookTestError(Exception) as exc:
+        except NotebookTestError as exc:
             logger.error("%s: %s", filename, exc)
             retval = 1
             if args.fix_header:
@@ -267,7 +267,7 @@ def main(argv: Sequence[str] | None = None) -> int:
                     )
                     logger.info("%s: header fixed", filename)
                     retval = 0
-                except NotebookTestError(Exception) as fix_exc:
+                except NotebookTestError as fix_exc:
                     logger.exception("%s: failed to fix header: %s", filename, fix_exc)
                     retval = 2
     return retval

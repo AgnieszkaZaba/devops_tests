@@ -3,11 +3,7 @@
 from __future__ import annotations
 
 from collections.abc import Sequence
-from .utils import open_and_test_notebooks
-
-
-class NotebookTestError(Exception):
-    """Raised when a notebook validation test fails."""
+from .utils import open_and_test_notebooks, NotebookTestError
 
 
 def test_jetbrains_bug_py_66491(notebook):

@@ -8,9 +8,7 @@ from collections.abc import Sequence
 
 import nbformat
 
-
-class NotebookTestError(Exception):
-    """Raised when a notebook validation test fails."""
+from .utils import NotebookTestError
 
 
 def test_show_plot_used_instead_of_matplotlib(notebook):

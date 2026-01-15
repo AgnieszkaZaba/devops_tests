@@ -9,7 +9,7 @@ from git import Git
 import nbformat
 
 
-class NotebookTestError(Exception):
+class NotebookTestError(BaseException):
     """Raised when a notebook validation test fails."""
 
 
