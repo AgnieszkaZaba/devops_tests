@@ -49,3 +49,11 @@ repos:
         language: python
         types: [jupyter]
         exclude: tests/examples/bad.ipynb
+
+      - id: notebooks-using-jupyter-utils
+        name: notebooks using open-atmos-jupyter-utils
+        entry: notebooks_using_jupyter_utils
+        additional_dependencies:
+          - nbformat
+        language: python
+        types: [ jupyter ]
