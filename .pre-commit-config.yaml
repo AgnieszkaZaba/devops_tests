@@ -27,6 +27,7 @@ repos:
           - nbformat
         language: python
         types: [jupyter]
+        exclude: tests/examples/bad.ipynb
 
       - id: check-badges
         name: check badges
@@ -47,3 +48,4 @@ repos:
           - nbformat
         language: python
         types: [jupyter]
+        exclude: tests/examples/bad.ipynb
