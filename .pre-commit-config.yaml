@@ -38,7 +38,7 @@ repos:
         args: [--fix-header, --repo-name=devops_tests]
         language: python
         types: [jupyter]
-        exclude: tests/examples/bad/
+        exclude: tests/examples/bad.ipynb
 
       - id: notebooks-output
         name: notebooks output

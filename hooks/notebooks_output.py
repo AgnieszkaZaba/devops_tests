@@ -1,17 +1,10 @@
 #!/usr/bin/env python3
-# pylint: disable=duplicate-code #TODO #62
 """checks if notebook is executed and do not contain 'stderr"""
 
 from __future__ import annotations
 
-import argparse
 from collections.abc import Sequence
-
-import nbformat
-
-
-class NotebookTestError(Exception):
-    """Raised when a notebook validation test fails."""
+from .utils import open_and_test_notebooks, NotebookTestError
 
 
 def test_cell_contains_output(notebook):
@@ -39,25 +32,6 @@ def test_no_errors_or_warnings_in_output(notebook):
                     out_text = output.get("text")
                     if out_text and not out_text.startswith("[Parallel(n_jobs="):
                         raise ValueError(f" Cell [{cell_idx}]: {out_text}")
-
-
-def open_and_test_notebooks(argv, test_functions):
-    """Create argparser and run notebook tests"""
-    parser = argparse.ArgumentParser()
-    parser.add_argument("filenames", nargs="*", help="Filenames to check.")
-    args = parser.parse_args(argv)
-
-    retval = 0
-    for filename in args.filenames:
-        with open(filename, encoding="utf8") as notebook_file:
-            notebook = nbformat.read(notebook_file, nbformat.NO_CONVERT)
-            for func in test_functions:
-                try:
-                    func(notebook)
-                except NotebookTestError as e:
-                    print(f"{filename} : {e}")
-                    retval = 1
-    return retval
 
 
 def main(argv: Sequence[str] | None = None) -> int:
