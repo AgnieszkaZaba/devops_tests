@@ -107,7 +107,7 @@ def expected_badges_for(
         repo_root = find_repo_root(notebook_path)
     try:
         rel = notebook_path.relative_to(repo_root)
-    except NotebookTestError:
+    except ValueError:
         # fallback to just the given path
         rel = notebook_path
     absolute_path = rel.as_posix()
