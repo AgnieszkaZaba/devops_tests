@@ -1,3 +1,5 @@
+# pylint: disable=missing-function-docstring
+
 """
 Unit tests for hooks/check_badges.py: good and bad notebook examples.
 
@@ -7,9 +9,9 @@ badge-check functions that expect filenames.
 
 import nbformat
 from nbformat.v4 import new_notebook, new_markdown_cell, new_code_cell
+import pytest
 
 from hooks import check_badges as cb
-import pytest
 
 
 def _write_nb_and_return_path(tmp_path, nb, name="nb.ipynb"):
@@ -19,28 +21,29 @@ def _write_nb_and_return_path(tmp_path, nb, name="nb.ipynb"):
 
 
 def test_good_notebook_header_and_second_cell(tmp_path):
-    # Create a notebook whose first cell contains exactly the three expected badges.
+    # arrange
     nb_path = tmp_path / "good.ipynb"
     repo_name = "devops_tests"
     repo_owner = "open-atmos"
-    # Use the helper functions from the module to generate the exact expected lines
     first_cell = "\n".join(
         [
-            cb._preview_badge_markdown(str(nb_path), repo_name, repo_owner),
-            cb._mybinder_badge_markdown(str(nb_path), repo_name, repo_owner),
-            cb._colab_badge_markdown(str(nb_path), repo_name, repo_owner),
-        ]
-    )
-    nb = new_notebook(
-        cells=[
-            new_markdown_cell(first_cell),
-            new_markdown_cell("Some description"),  # second cell must be markdown
-            new_code_cell(source="print('ok')", execution_count=1, outputs=[]),
+            cb.preview_badge_markdown(str(nb_path), repo_name, repo_owner),
+            cb.mybinder_badge_markdown(str(nb_path), repo_name, repo_owner),
+            cb.colab_badge_markdown(str(nb_path), repo_name, repo_owner),
         ]
     )
 
+    # act
+    nb = new_notebook(
+        cells=[
+            new_markdown_cell(first_cell),
+            new_markdown_cell("Some description"),
+            new_code_cell(source="print('ok')", execution_count=1, outputs=[]),
+        ]
+    )
     path = _write_nb_and_return_path(tmp_path, nb, name="good.ipynb")
-    # These should not raise
+
+    # assert
     cb.test_notebook_has_at_least_three_cells(path)
     cb.test_first_cell_contains_three_badges(path, repo_name)
     cb.test_second_cell_is_a_markdown_cell(path)

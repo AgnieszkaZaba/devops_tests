@@ -1,3 +1,4 @@
+# pylint: disable=missing-function-docstring
 """
 Unit tests for hooks/check_notebooks.py: good and bad notebook examples.
 
@@ -15,7 +16,6 @@ from hooks import notebooks_using_jupyter_utils as nuju
 
 
 def test_good_notebook_passes_all_checks():
-    # A small, correct notebook: markdown + code cell with execution_count and stdout
     nb = new_notebook(
         cells=[
             new_markdown_cell("Intro"),
@@ -27,10 +27,8 @@ def test_good_notebook_passes_all_checks():
         ]
     )
 
-    # Should not raise
     no.test_cell_contains_output(nb)
     no.test_no_errors_or_warnings_in_output(nb)
-
     cn.test_jetbrains_bug_py_66491(nb)
     nuju.test_show_plot_used_instead_of_matplotlib(nb)
     nuju.test_show_anim_used_instead_of_matplotlib(nb)
@@ -38,10 +36,7 @@ def test_good_notebook_passes_all_checks():
 
 def test_cell_missing_execution_count_raises():
     nb = new_notebook(
-        cells=[
-            # code cell with source but execution_count None -> should raise in test_cell_contains_output
-            new_code_cell(source="print(1)", execution_count=None, outputs=[])
-        ]
+        cells=[new_code_cell(source="print(1)", execution_count=None, outputs=[])]
     )
     with pytest.raises(ValueError):
         no.test_cell_contains_output(nb)
@@ -87,17 +82,14 @@ def test_animation_without_show_anim_raises():
             )
         ]
     )
-    # test_show_anim_used_instead_of_matplotlib raises AssertionError on bad usage
     with pytest.raises(AssertionError):
         nuju.test_show_anim_used_instead_of_matplotlib(nb)
 
 
 def test_missing_execution_count_key_raises():
-    # Create a cell that lacks the execution_count key entirely (JetBrains bug case)
     nb = new_notebook(
         cells=[new_code_cell(source="1+1", execution_count=1, outputs=[])]
     )
-    # remove execution_count key to simulate the broken JSON
     del nb.cells[0]["execution_count"]
     with pytest.raises(ValueError):
         cn.test_jetbrains_bug_py_66491(nb)

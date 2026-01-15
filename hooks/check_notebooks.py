@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# pylint: disable=missing-module-docstring
 from __future__ import annotations
 
 from collections.abc import Sequence

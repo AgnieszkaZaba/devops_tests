@@ -1,30 +1,43 @@
 #!/usr/bin/env python3
+# pylint: disable=missing-function-docstring
 """
 Checks/repairs notebook badge headers.
 
-This module validates that a notebook's first cell contains the three canonical
-badges (GitHub preview, MyBinder, Colab). It tolerates whitespace differences and
-badge order, and can optionally fix the header in-place.
+This version optionally uses Git to discover the repository root (to build
+repo-relative notebook URLs) and uses Python's logging module instead of print()
+for structured messages.
+
+Behavior:
+- By default it will attempt to detect the git repo root (if GitPython is
+  installed and the file is in a git working tree) and fall back to Path.cwd().
+- Use --no-git to force using Path.cwd().
+- Use --repo-root PATH to explicitly set repository root.
+- Use --verbose to enable debug logging.
 
 Usage:
-    check_badges --repo-name=devops_tests [--repo-owner=open-atmos] [--fix-header] FILES...
-
-The functions are written to be easily unit-tested.
+    check_badges --repo-name=devops_tests [--repo-owner=open-atmos] [--fix-header]
+        [--no-git] [--repo-root PATH] [--verbose] FILES...
 """
 from __future__ import annotations
 
 import argparse
+import logging
 from collections.abc import Sequence
 from pathlib import Path
-from typing import Iterable, List, Tuple
+from typing import Iterable, List, Tuple, Optional
 
 import nbformat
 from nbformat import NotebookNode
 
+from .utils import NotebookTestError
+
 REPO_OWNER_DEFAULT = "open-atmos"
 
 
-def _preview_badge_markdown(absolute_path: str, repo_name: str, repo_owner: str) -> str:
+logger = logging.getLogger(__name__)
+
+
+def preview_badge_markdown(absolute_path: str, repo_name: str, repo_owner: str) -> str:
     svg_badge_url = (
         "https://img.shields.io/static/v1?"
         + "label=render%20on&logo=github&color=87ce3e&message=GitHub"
@@ -33,9 +46,7 @@ def _preview_badge_markdown(absolute_path: str, repo_name: str, repo_owner: str)
     return f"[![preview notebook]({svg_badge_url})]({link})"
 
 
-def _mybinder_badge_markdown(
-    absolute_path: str, repo_name: str, repo_owner: str
-) -> str:
+def mybinder_badge_markdown(absolute_path: str, repo_name: str, repo_owner: str) -> str:
     svg_badge_url = "https://mybinder.org/badge_logo.svg"
     link = (
         f"https://mybinder.org/v2/gh/{repo_owner}/{repo_name}.git/main?urlpath=lab/tree/"
@@ -44,7 +55,7 @@ def _mybinder_badge_markdown(
     return f"[![launch on mybinder.org]({svg_badge_url})]({link})"
 
 
-def _colab_badge_markdown(absolute_path: str, repo_name: str, repo_owner: str) -> str:
+def colab_badge_markdown(absolute_path: str, repo_name: str, repo_owner: str) -> str:
     svg_badge_url = "https://colab.research.google.com/assets/colab-badge.svg"
     link = (
         f"https://colab.research.google.com/github/{repo_owner}/{repo_name}/blob/main/"
@@ -53,24 +64,57 @@ def _colab_badge_markdown(absolute_path: str, repo_name: str, repo_owner: str) -
     return f"[![launch on Colab]({svg_badge_url})]({link})"
 
 
+def find_repo_root(start_path: Path, prefer_git: bool = True) -> Path:
+    """
+    Find repository root for the given start_path.
+
+    If prefer_git is True, attempt to use GitPython to locate the repository root
+    (searching parent directories). If that fails, fall back to cwd().
+    """
+    if prefer_git:
+        try:
+            # Import locally so the module doesn't hard-depend on GitPython at import time
+            from git import Repo  # pylint: disable=import-outside-toplevel
+
+            try:
+                repo = Repo(start_path, search_parent_directories=True)
+                if repo.working_tree_dir:
+                    root = Path(repo.working_tree_dir)
+                    logger.debug("Discovered git repository root: %s", root)
+                    return root
+            except Exception as exc:  # pylint: disable=broad-exception-caught
+                logger.debug("Git repo detection failed for %s: %s", start_path, exc)
+        except ImportError as exc:
+            logger.debug("GitPython not available or import failed: %s", exc)
+
+    cwd = Path.cwd()
+    logger.debug("Using current working directory as repo root: %s", cwd)
+    return cwd
+
+
 def expected_badges_for(
-    notebook_path: Path, repo_name: str, repo_owner: str
+    notebook_path: Path,
+    repo_name: str,
+    repo_owner: str,
+    repo_root: Optional[Path] = None,
 ) -> List[str]:
     """
     Return the canonical badge lines expected for notebook_path.
-    The notebook_path is used to build the URL path; we convert it to a
-    repo-relative posix path (best-effort).
+    If repo_root is provided, attempt to build a relative path from it; otherwise
+    find repository root automatically (using find_repo_root).
     """
-    # Build a repo-relative path: try to strip cwd if notebook is inside repo
+    if repo_root is None:
+        repo_root = find_repo_root(notebook_path)
     try:
-        rel = notebook_path.relative_to(Path.cwd())
-    except Exception:
+        rel = notebook_path.relative_to(repo_root)
+    except NotebookTestError(Exception):
+        # fallback to just the given path
         rel = notebook_path
     absolute_path = rel.as_posix()
     return [
-        _preview_badge_markdown(absolute_path, repo_name, repo_owner),
-        _mybinder_badge_markdown(absolute_path, repo_name, repo_owner),
-        _colab_badge_markdown(absolute_path, repo_name, repo_owner),
+        preview_badge_markdown(absolute_path, repo_name, repo_owner),
+        mybinder_badge_markdown(absolute_path, repo_name, repo_owner),
+        colab_badge_markdown(absolute_path, repo_name, repo_owner),
     ]
 
 
@@ -91,7 +135,6 @@ def first_cell_lines(nb: NotebookNode) -> List[str]:
     first = nb.cells[0]
     if first.cell_type != "markdown":
         return []
-    # split preserving order, strip each line
     return [ln.strip() for ln in str(first.source).splitlines() if ln.strip() != ""]
 
 
@@ -119,15 +162,24 @@ def test_notebook_has_at_least_three_cells(notebook_filename: str) -> None:
 
 
 def test_first_cell_contains_three_badges(
-    notebook_filename: str, repo_name: str, repo_owner: str = REPO_OWNER_DEFAULT
+    notebook_filename: str,
+    repo_name: str,
+    repo_owner: str = REPO_OWNER_DEFAULT,
+    repo_root: Optional[Path] = None,
 ) -> None:
     """
     checks if the notebook's first cell contains the three badges.
     Raises ValueError on failure.
+
+    The optional repo_root can be provided to control how the notebook path is
+    converted into the remote URL. If None, the module will attempt to detect
+    a git repo root and fall back to cwd().
     """
     nb = read_notebook(Path(notebook_filename))
     lines = first_cell_lines(nb)
-    expected = expected_badges_for(Path(notebook_filename), repo_name, repo_owner)
+    expected = expected_badges_for(
+        Path(notebook_filename), repo_name, repo_owner, repo_root
+    )
     ok, msg = badges_match(lines, expected)
     if not ok:
         raise ValueError(msg)
@@ -143,15 +195,17 @@ def test_second_cell_is_a_markdown_cell(notebook_filename: str) -> None:
 
 
 def fix_header_inplace(
-    path: Path, repo_name: str, repo_owner: str = REPO_OWNER_DEFAULT
+    path: Path,
+    repo_name: str,
+    repo_owner: str = REPO_OWNER_DEFAULT,
+    repo_root: Optional[Path] = None,
 ) -> None:
     """
     Replace the first cell with the canonical 3-badge header if the header is missing
     or malformed. If the notebook has no cells, a new markdown cell is inserted.
     """
     nb = read_notebook(path)
-    expected = expected_badges_for(path, repo_name, repo_owner)
-    # Build markdown with one badge per line
+    expected = expected_badges_for(path, repo_name, repo_owner, repo_root)
     new_first = {"cell_type": "markdown", "metadata": {}, "source": "\n".join(expected)}
     if not nb.cells:
         nb.cells.insert(0, nbformat.from_dict(new_first))
@@ -169,28 +223,52 @@ def main(argv: Sequence[str] | None = None) -> int:
         action="store_true",
         help="If set, attempt to fix notebooks missing the header.",
     )
+    parser.add_argument(
+        "--no-git",
+        action="store_true",
+        help="Do not attempt to detect git repo root; use cwd()",
+    )
+    parser.add_argument(
+        "--repo-root", help="Explicit repository root to use when building URLs"
+    )
+    parser.add_argument("--verbose", action="store_true", help="Enable debug logging")
     parser.add_argument("filenames", nargs="*", help="Filenames to check.")
     args = parser.parse_args(argv)
 
+    # configure logging
+    level = logging.DEBUG if args.verbose else logging.INFO
+    logging.basicConfig(level=level, format="%(levelname)s: %(message)s")
+
+    prefer_git = not args.no_git
+    repo_root_path: Optional[Path] = Path(args.repo_root) if args.repo_root else None
     retval = 0
     for filename in args.filenames:
         path = Path(filename)
         try:
+            effective_repo_root = repo_root_path or (
+                find_repo_root(path, prefer_git) if prefer_git else Path.cwd()
+            )
+
             test_notebook_has_at_least_three_cells(filename)
             test_first_cell_contains_three_badges(
-                filename, args.repo_name, args.repo_owner
+                filename, args.repo_name, args.repo_owner, effective_repo_root
             )
             test_second_cell_is_a_markdown_cell(filename)
-        except Exception as exc:
-            print(f"{filename}: {exc}")
+
+            logger.info("%s: OK", filename)
+            retval = retval or 0
+        except NotebookTestError(Exception) as exc:
+            logger.error("%s: %s", filename, exc)
             retval = 1
             if args.fix_header:
                 try:
-                    fix_header_inplace(path, args.repo_name, args.repo_owner)
-                    print(f"{filename}: header fixed")
+                    fix_header_inplace(
+                        path, args.repo_name, args.repo_owner, effective_repo_root
+                    )
+                    logger.info("%s: header fixed", filename)
                     retval = 0
-                except Exception as fix_exc:
-                    print(f"{filename}: failed to fix header: {fix_exc}")
+                except NotebookTestError(Exception) as fix_exc:
+                    logger.exception("%s: failed to fix header: %s", filename, fix_exc)
                     retval = 2
     return retval
 

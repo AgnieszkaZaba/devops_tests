@@ -4,7 +4,7 @@
 from __future__ import annotations
 
 from collections.abc import Sequence
-from .utils import open_and_test_notebooks, NotebookTestError
+from .utils import open_and_test_notebooks
 
 
 def test_cell_contains_output(notebook):

@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-# pylint: disable=duplicate-code #TODO #62
 """
 Checks notebook execution status for Jupyter notebooks"""
 from __future__ import annotations
