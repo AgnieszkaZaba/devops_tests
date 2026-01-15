@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from collections.abc import Sequence
-from .utils import open_and_test_notebooks, NotebookTestError
+from .utils import open_and_test_notebooks
 
 
 def test_jetbrains_bug_py_66491(notebook):
