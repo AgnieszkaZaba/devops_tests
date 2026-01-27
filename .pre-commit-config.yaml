@@ -30,7 +30,7 @@ repos:
 
       - id: check-notebook-open-atmos-structure
         name: check notebook has open-atmos structure
-        entry: check_notebook_open_atmos_structure
+        entry: python -m hooks.check_notebook_open_atmos_structure
         additional_dependencies:
           - nbformat
           - pytest
