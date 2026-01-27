@@ -6,10 +6,10 @@
   stages: [pre-commit]
   types: [jupyter]
 
-- id: check-badges
-  name: check badges
-  description: check badges in Jupyter Notebook
-  entry: check_badges
+- id: check-notebook-open-atmos-structure
+  name: check notebook has open-atmos structure
+  entry: check_notebook_open_atmos_structure
+  description: check notebook has open-atmos structure
   language: python
   stages: [pre-commit]
   types: [jupyter]

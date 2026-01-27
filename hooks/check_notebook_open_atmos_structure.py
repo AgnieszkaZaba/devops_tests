@@ -1,4 +1,4 @@
-# notebook_checks.py
+# pre-commit hook checking if badges in first cell match pattern used in open-atmos Jupyter Notebooks
 from __future__ import annotations
 
 import argparse
