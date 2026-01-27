@@ -1,4 +1,5 @@
-# Extract version from existing header and check if header is correct
+"""Extract version from existing header and check if header is correct"""
+
 from __future__ import annotations
 
 import re
@@ -46,6 +47,7 @@ def resolve_version(existing: str | None, hook_version: str | None) -> str:
 
 
 def build_header(repo_name: str, version: str) -> str:
+    """required header pattern in open-atmos notebooks"""
     return f"""import os, sys
 os.environ['NUMBA_THREADING_LAYER'] = 'workqueue'  # PySDM & PyMPDATA don't work with TBB; OpenMP has extra dependencies on macOS
 if 'google.colab' in sys.modules:
@@ -62,10 +64,12 @@ HEADER_REQUIRED_PATTERNS = [
 
 
 def looks_like_header(cell_source: str) -> bool:
+    """check if the cell source looks like required header"""
     return all(pat in cell_source for pat in HEADER_REQUIRED_PATTERNS)
 
 
 def check_colab_header(notebook_path, repo_name, fix, hook_version):
+    """check if colab header is correct"""
     nb = nbformat.read(notebook_path, as_version=nbformat.NO_CONVERT)
 
     if len(nb.cells) < 3:
