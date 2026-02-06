@@ -12,6 +12,7 @@ expected exit codes, and checks stderr for expected failure substrings.
 
 Adjust the candidate paths in _find_example() if your examples are stored elsewhere.
 """
+
 from __future__ import annotations
 
 import subprocess

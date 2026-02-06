@@ -18,6 +18,7 @@ Usage:
     check_badges --repo-name=devops_tests [--repo-owner=open-atmos] [--fix-header]
         [--no-git] [--repo-root PATH] [--verbose] FILES...
 """
+
 from __future__ import annotations
 
 import argparse

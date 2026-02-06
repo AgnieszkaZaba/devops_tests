@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """
 Checks notebook execution status for Jupyter notebooks"""
+
 from __future__ import annotations
 
 from collections.abc import Sequence
@@ -38,10 +39,8 @@ def test_show_anim_used_instead_of_matplotlib(notebook):
             if "show_anim(" in cell.source:
                 show_anim_used = True
     if matplot_used and not show_anim_used:
-        raise AssertionError(
-            """if using matplotlib for animations,
-            please use open_atmos_jupyter_utils.show_anim()"""
-        )
+        raise AssertionError("""if using matplotlib for animations,
+            please use open_atmos_jupyter_utils.show_anim()""")
 
 
 def main(argv: Sequence[str] | None = None) -> int:
