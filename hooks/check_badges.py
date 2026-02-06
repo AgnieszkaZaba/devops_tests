@@ -209,26 +209,6 @@ def test_second_cell_is_a_markdown_cell(notebook_filename: str) -> None:
         raise ValueError("Second cell is not a markdown cell")
 
 
-def fix_header_inplace(
-    path: Path,
-    repo_name: str,
-    repo_owner: str = REPO_OWNER_DEFAULT,
-    repo_root: Optional[Path] = None,
-) -> None:
-    """
-    Replace the first cell with the canonical 3-badge header if the header is missing
-    or malformed. If the notebook has no cells, a new markdown cell is inserted.
-    """
-    nb = read_notebook(path)
-    expected = expected_badges_for(path, repo_name, repo_owner, repo_root)
-    new_first = {"cell_type": "markdown", "metadata": {}, "source": "\n".join(expected)}
-    if not nb.cells:
-        nb.cells.insert(0, nbformat.from_dict(new_first))
-    else:
-        nb.cells[0] = nbformat.from_dict(new_first)
-    write_notebook(path, nb)
-
-
 def main(argv: Sequence[str] | None = None) -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--repo-name", required=True)
@@ -275,16 +255,6 @@ def main(argv: Sequence[str] | None = None) -> int:
         except NotebookTestError as exc:
             logger.error("%s: %s", filename, exc)
             retval = 1
-            if args.fix_header:
-                try:
-                    fix_header_inplace(
-                        path, args.repo_name, args.repo_owner, effective_repo_root
-                    )
-                    logger.info("%s: header fixed", filename)
-                    retval = 0
-                except NotebookTestError as fix_exc:
-                    logger.exception("%s: failed to fix header: %s", filename, fix_exc)
-                    retval = 2
     return retval
 
 
