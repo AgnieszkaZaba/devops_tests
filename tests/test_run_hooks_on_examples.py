@@ -39,7 +39,7 @@ def _find_example(basename: str) -> Path | None:
 
 def _run_module(module: str, args: list[str]) -> subprocess.CompletedProcess:
     cmd = [sys.executable, "-m", module] + args
-    return subprocess.run(cmd, capture_output=True, text=True, check=True)
+    return subprocess.run(cmd, capture_output=True, text=True, check=False)
 
 
 @pytest.mark.parametrize(
