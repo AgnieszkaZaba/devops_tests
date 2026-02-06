@@ -45,8 +45,10 @@ def relative_path(absolute_path, repo_root):
 
     try:
         relpath = absolute_path.relative_to(repo_root)
-    except ValueError:
-        raise ValueError(f"{absolute_path} is not inside repo root {repo_root}")
+    except ValueError as exc:
+        raise ValueError(
+            f"{absolute_path} is not inside repo root {repo_root}"
+        ) from exc
 
     return relpath.as_posix()
 
