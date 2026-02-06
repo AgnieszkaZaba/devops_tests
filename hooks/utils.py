@@ -33,15 +33,6 @@ def find_files(path_to_folder_from_project_root=".", file_extension=None):
     return all_files
 
 
-def relative_path(absolute_path, repo_name):
-    """returns a path relative to the repo base (converting backslashes to slashes on Windows)"""
-    relpath = os.path.relpath(absolute_path, repo_name)
-    posixpath_to_make_it_usable_in_urls_even_on_windows = pathlib.Path(
-        relpath
-    ).as_posix()
-    return posixpath_to_make_it_usable_in_urls_even_on_windows
-
-
 def repo_path():
     """returns absolute path to the repo base (ignoring .git location if in a submodule)"""
     path = pathlib.Path(__file__)

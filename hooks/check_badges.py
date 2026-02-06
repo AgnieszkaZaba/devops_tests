@@ -38,29 +38,42 @@ REPO_OWNER_DEFAULT = "open-atmos"
 logger = logging.getLogger(__name__)
 
 
-def preview_badge_markdown(absolute_path: str, repo_name: str, repo_owner: str) -> str:
+def relative_path(absolute_path, repo_root):
+    """returns a path relative to the repo base (converting backslashes to slashes on Windows)"""
+    absolute_path = Path(absolute_path).resolve()
+    repo_root = Path(repo_root).resolve()
+
+    try:
+        relpath = absolute_path.relative_to(repo_root)
+    except ValueError:
+        raise ValueError(f"{absolute_path} is not inside repo root {repo_root}")
+
+    return relpath.as_posix()
+
+
+def preview_badge_markdown(relpath: str, repo_name: str, repo_owner: str) -> str:
     svg_badge_url = (
         "https://img.shields.io/static/v1?"
         + "label=render%20on&logo=github&color=87ce3e&message=GitHub"
     )
-    link = f"https://github.com/{repo_owner}/{repo_name}/blob/main/{absolute_path}"
+    link = f"https://github.com/{repo_owner}/{repo_name}/blob/main/{relpath}"
     return f"[![preview notebook]({svg_badge_url})]({link})"
 
 
-def mybinder_badge_markdown(absolute_path: str, repo_name: str, repo_owner: str) -> str:
+def mybinder_badge_markdown(relpath: str, repo_name: str, repo_owner: str) -> str:
     svg_badge_url = "https://mybinder.org/badge_logo.svg"
     link = (
         f"https://mybinder.org/v2/gh/{repo_owner}/{repo_name}.git/main?urlpath=lab/tree/"
-        + f"{absolute_path}"
+        + f"{relpath}"
     )
     return f"[![launch on mybinder.org]({svg_badge_url})]({link})"
 
 
-def colab_badge_markdown(absolute_path: str, repo_name: str, repo_owner: str) -> str:
+def colab_badge_markdown(relpath: str, repo_name: str, repo_owner: str) -> str:
     svg_badge_url = "https://colab.research.google.com/assets/colab-badge.svg"
     link = (
         f"https://colab.research.google.com/github/{repo_owner}/{repo_name}/blob/main/"
-        + f"{absolute_path}"
+        + f"{relpath}"
     )
     return f"[![launch on Colab]({svg_badge_url})]({link})"
 
@@ -106,16 +119,15 @@ def expected_badges_for(
     """
     if repo_root is None:
         repo_root = find_repo_root(notebook_path)
-    try:
-        rel = notebook_path.relative_to(repo_root)
-    except ValueError:
-        # fallback to just the given path
-        rel = notebook_path
-    absolute_path = rel.as_posix()
+
+    if repo_root is None:
+        raise ValueError("Could not determine repo root")
+
+    relpath = relative_path(notebook_path, repo_root)
     return [
-        preview_badge_markdown(absolute_path, repo_name, repo_owner),
-        mybinder_badge_markdown(absolute_path, repo_name, repo_owner),
-        colab_badge_markdown(absolute_path, repo_name, repo_owner),
+        preview_badge_markdown(relpath, repo_name, repo_owner),
+        mybinder_badge_markdown(relpath, repo_name, repo_owner),
+        colab_badge_markdown(relpath, repo_name, repo_owner),
     ]
 
 
