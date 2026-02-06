@@ -130,4 +130,4 @@ def test_check_notebooks_on_examples(name: str, should_fail: bool):
         pytest.skip(f"No example notebook found for {name}")
 
     res = _run_module("hooks.check_notebooks", [str(nb_path)])
-    assert res.returncode == 0
+    assert res.returncode == should_fail
