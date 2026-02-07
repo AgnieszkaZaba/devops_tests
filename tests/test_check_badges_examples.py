@@ -25,11 +25,13 @@ def test_good_notebook_header_and_second_cell(tmp_path):
     nb_path = tmp_path / "good.ipynb"
     repo_name = "devops_tests"
     repo_owner = "open-atmos"
+
+    relpath = cb.relative_path(nb_path, tmp_path)
     first_cell = "\n".join(
         [
-            cb.preview_badge_markdown(str(nb_path), repo_name, repo_owner),
-            cb.mybinder_badge_markdown(str(nb_path), repo_name, repo_owner),
-            cb.colab_badge_markdown(str(nb_path), repo_name, repo_owner),
+            cb.preview_badge_markdown(relpath, repo_name, repo_owner),
+            cb.mybinder_badge_markdown(relpath, repo_name, repo_owner),
+            cb.colab_badge_markdown(relpath, repo_name, repo_owner),
         ]
     )
 
@@ -45,7 +47,9 @@ def test_good_notebook_header_and_second_cell(tmp_path):
 
     # assert
     cb.test_notebook_has_at_least_three_cells(path)
-    cb.test_first_cell_contains_three_badges(path, repo_name)
+    cb.test_first_cell_contains_three_badges(
+        path, repo_name, repo_owner, repo_root=tmp_path
+    )
     cb.test_second_cell_is_a_markdown_cell(path)
 
 
