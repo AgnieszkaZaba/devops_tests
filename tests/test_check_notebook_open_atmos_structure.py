@@ -1,17 +1,18 @@
 # pylint: disable=missing-function-docstring
 
 """
-Unit tests for hooks/check_badges.py: good and bad notebook examples.
+Unit tests for hooks/check_notebook_open_atmos_structure.py: good and bad notebook examples.
 
 These tests write small notebooks to temporary files and call the
 badge-check functions that expect filenames.
 """
 
+import pathlib
 import nbformat
 from nbformat.v4 import new_notebook, new_markdown_cell, new_code_cell
 import pytest
 
-from hooks import check_badges as cb
+from hooks import check_notebook_open_atmos_structure as cb
 
 
 def _write_nb_and_return_path(tmp_path, nb, name="nb.ipynb"):
@@ -70,7 +71,9 @@ def test_first_cell_bad_badges_raises(tmp_path):
     )
     path = _write_nb_and_return_path(tmp_path, nb, name="badbadges.ipynb")
     with pytest.raises(ValueError):
-        cb.test_first_cell_contains_three_badges(path, "devops_tests")
+        cb.test_first_cell_contains_three_badges(
+            path, "devops_tests", repo_root=pathlib.Path("")
+        )
 
 
 def test_second_cell_not_markdown_raises(tmp_path):
