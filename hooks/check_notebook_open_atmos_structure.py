@@ -1,22 +1,6 @@
 #!/usr/bin/env python3
-# pylint: disable=missing-function-docstring
 """
-Checks/repairs notebook badge headers.
-
-This version optionally uses Git to discover the repository root (to build
-repo-relative notebook URLs) and uses Python's logging module instead of print()
-for structured messages.
-
-Behavior:
-- By default it will attempt to detect the git repo root (if GitPython is
-  installed and the file is in a git working tree) and fall back to Path.cwd().
-- Use --no-git to force using Path.cwd().
-- Use --repo-root PATH to explicitly set repository root.
-- Use --verbose to enable debug logging.
-
-Usage:
-    check_badges --repo-name=devops_tests [--repo-owner=open-atmos] [--fix-header]
-        [--no-git] [--repo-root PATH] [--verbose] FILES...
+Checks notebooks structure required in open-atmos projects.
 """
 
 from __future__ import annotations
@@ -30,6 +14,7 @@ from typing import Iterable, List, Tuple, Optional
 import nbformat
 from nbformat import NotebookNode
 
+from .open_atmos_colab_header import check_colab_header
 from .utils import NotebookTestError
 
 REPO_OWNER_DEFAULT = "open-atmos"
@@ -38,55 +23,15 @@ REPO_OWNER_DEFAULT = "open-atmos"
 logger = logging.getLogger(__name__)
 
 
-def relative_path(absolute_path, repo_root):
-    """returns a path relative to the repo base (converting backslashes to slashes on Windows)"""
-    absolute_path = Path(absolute_path).resolve()
-    repo_root = Path(repo_root).resolve()
-
-    try:
-        relpath = absolute_path.relative_to(repo_root)
-    except ValueError as exc:
-        raise ValueError(
-            f"{absolute_path} is not inside repo root {repo_root}"
-        ) from exc
-
-    return relpath.as_posix()
-
-
-def preview_badge_markdown(relpath: str, repo_name: str, repo_owner: str) -> str:
-    svg_badge_url = (
-        "https://img.shields.io/static/v1?"
-        + "label=render%20on&logo=github&color=87ce3e&message=GitHub"
-    )
-    link = f"https://github.com/{repo_owner}/{repo_name}/blob/main/{relpath}"
-    return f"[![preview notebook]({svg_badge_url})]({link})"
-
-
-def mybinder_badge_markdown(relpath: str, repo_name: str, repo_owner: str) -> str:
-    svg_badge_url = "https://mybinder.org/badge_logo.svg"
-    link = (
-        f"https://mybinder.org/v2/gh/{repo_owner}/{repo_name}.git/main?urlpath=lab/tree/"
-        + f"{relpath}"
-    )
-    return f"[![launch on mybinder.org]({svg_badge_url})]({link})"
-
-
-def colab_badge_markdown(relpath: str, repo_name: str, repo_owner: str) -> str:
-    svg_badge_url = "https://colab.research.google.com/assets/colab-badge.svg"
-    link = (
-        f"https://colab.research.google.com/github/{repo_owner}/{repo_name}/blob/main/"
-        + f"{relpath}"
-    )
-    return f"[![launch on Colab]({svg_badge_url})]({link})"
-
-
-def find_repo_root(start_path: Path, prefer_git: bool = True) -> Path:
-    """
-    Find repository root for the given start_path.
-
-    If prefer_git is True, attempt to use GitPython to locate the repository root
-    (searching parent directories). If that fails, fall back to cwd().
-    """
+def resolve_repo_root(
+    start_path: Path,
+    *,
+    explicit_root: Path | None,
+    prefer_git: bool,
+) -> Path:
+    """Resolve the repository root for the given path."""
+    if explicit_root is not None:
+        return explicit_root
     if prefer_git:
         try:
             # Import locally so the module doesn't hard-depend on GitPython at import time
@@ -108,37 +53,79 @@ def find_repo_root(start_path: Path, prefer_git: bool = True) -> Path:
     return cwd
 
 
+def relative_path(absolute_path, repo_root):
+    """Return the path relative to the repository root."""
+    absolute_path = Path(absolute_path).resolve()
+    repo_root = Path(repo_root).resolve()
+
+    try:
+        relpath = absolute_path.relative_to(repo_root)
+    except ValueError as exc:
+        raise ValueError(
+            f"{absolute_path} is not inside repo root {repo_root}"
+        ) from exc
+
+    return relpath.as_posix()
+
+
+def preview_badge_markdown(relpath: str, repo_name: str, repo_owner: str) -> str:
+    """Create markdown for the GitHub-preview badge."""
+    svg_badge_url = (
+        "https://img.shields.io/static/v1?"
+        + "label=render%20on&logo=github&color=87ce3e&message=GitHub"
+    )
+    link = f"https://github.com/{repo_owner}/{repo_name}/blob/main/{relpath}"
+    return f"[![preview notebook]({svg_badge_url})]({link})"
+
+
+def mybinder_badge_markdown(relpath: str, repo_name: str, repo_owner: str) -> str:
+    """Create markdown for the Binder badge."""
+    svg_badge_url = "https://mybinder.org/badge_logo.svg"
+    link = (
+        f"https://mybinder.org/v2/gh/{repo_owner}/{repo_name}.git/main?urlpath=lab/tree/"
+        + f"{relpath}"
+    )
+    return f"[![launch on mybinder.org]({svg_badge_url})]({link})"
+
+
+def colab_badge_markdown(relpath: str, repo_name: str, repo_owner: str) -> str:
+    """Create markdown for the Colab badge."""
+    svg_badge_url = "https://colab.research.google.com/assets/colab-badge.svg"
+    link = (
+        f"https://colab.research.google.com/github/{repo_owner}/{repo_name}/blob/main/"
+        + f"{relpath}"
+    )
+    return f"[![launch on Colab]({svg_badge_url})]({link})"
+
+
 def expected_badges_for(
     notebook_path: Path,
     repo_name: str,
     repo_owner: str,
-    repo_root: Optional[Path] = None,
+    repo_root: Optional[Path],
 ) -> List[str]:
     """
     Return the canonical badge lines expected for notebook_path.
     If repo_root is provided, attempt to build a relative path from it; otherwise
     find repository root automatically (using find_repo_root).
     """
-    if repo_root is None:
-        repo_root = find_repo_root(notebook_path)
-
-    if repo_root is None:
-        raise ValueError("Could not determine repo root")
-
     relpath = relative_path(notebook_path, repo_root)
+    args = (relpath, repo_name, repo_owner)
     return [
-        preview_badge_markdown(relpath, repo_name, repo_owner),
-        mybinder_badge_markdown(relpath, repo_name, repo_owner),
-        colab_badge_markdown(relpath, repo_name, repo_owner),
+        preview_badge_markdown(*args),
+        mybinder_badge_markdown(*args),
+        colab_badge_markdown(*args),
     ]
 
 
 def read_notebook(path: Path) -> NotebookNode:
+    """Read a Jupyter notebook without format conversion."""
     with path.open(encoding="utf8") as fp:
         return nbformat.read(fp, nbformat.NO_CONVERT)
 
 
 def write_notebook(path: Path, nb: NotebookNode) -> None:
+    """Write a Jupyter notebook to disk."""
     with path.open("w", encoding="utf8") as fp:
         nbformat.write(nb, fp)
 
@@ -209,53 +196,67 @@ def test_second_cell_is_a_markdown_cell(notebook_filename: str) -> None:
         raise ValueError("Second cell is not a markdown cell")
 
 
-def main(argv: Sequence[str] | None = None) -> int:
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--repo-name", required=True)
-    parser.add_argument("--repo-owner", default=REPO_OWNER_DEFAULT)
-    parser.add_argument(
+def build_parser() -> argparse.ArgumentParser:
+    """Build parser for command line arguments."""
+    p = argparse.ArgumentParser()
+    p.add_argument("--repo-name", required=True)
+    p.add_argument("--repo-owner", default=REPO_OWNER_DEFAULT)
+    p.add_argument(
         "--fix-header",
         action="store_true",
         help="If set, attempt to fix notebooks missing the header.",
     )
-    parser.add_argument(
+    p.add_argument(
         "--no-git",
         action="store_true",
         help="Do not attempt to detect git repo root; use cwd()",
     )
-    parser.add_argument(
+    p.add_argument(
         "--repo-root", help="Explicit repository root to use when building URLs"
     )
-    parser.add_argument("--verbose", action="store_true", help="Enable debug logging")
-    parser.add_argument("filenames", nargs="*", help="Filenames to check.")
-    args = parser.parse_args(argv)
+    p.add_argument("--verbose", action="store_true", help="Enable debug logging")
+    p.add_argument("filenames", nargs="*", help="Filenames to check.")
+    return p
 
-    # configure logging
-    level = logging.DEBUG if args.verbose else logging.INFO
+
+def configure_logging(verbose: bool) -> None:
+    """Configure logging with --verbose flag"""
+    level = logging.DEBUG if verbose else logging.INFO
     logging.basicConfig(level=level, format="%(levelname)s: %(message)s")
 
+
+def main(argv: Sequence[str] | None = None) -> int:
+    """Test notebook structure:
+    - first cell with 3 correct badges,
+    - second cell is of type markdown (best if with notebook description),
+    - third cell is a Colab magick cell.
+    """
+    args = build_parser().parse_args(argv)
+    configure_logging(args.verbose)
+    explicit_repo_root = Path(args.repo_root) if args.repo_root else None
     prefer_git = not args.no_git
-    repo_root_path: Optional[Path] = Path(args.repo_root) if args.repo_root else None
-    retval = 0
+
+    failed = False
     for filename in args.filenames:
         path = Path(filename)
         try:
-            effective_repo_root = repo_root_path or (
-                find_repo_root(path, prefer_git) if prefer_git else Path.cwd()
+            repo_root = resolve_repo_root(
+                path,
+                explicit_root=explicit_repo_root,
+                prefer_git=prefer_git,
             )
-
             test_notebook_has_at_least_three_cells(filename)
             test_first_cell_contains_three_badges(
-                filename, args.repo_name, args.repo_owner, effective_repo_root
+                filename, args.repo_name, args.repo_owner, repo_root
             )
             test_second_cell_is_a_markdown_cell(filename)
+            check_colab_header(path, args.repo_name, args.fix_header, "")
+            logger.info("%s: OK", path)
 
-            logger.info("%s: OK", filename)
-            retval = retval or 0
         except NotebookTestError as exc:
-            logger.error("%s: %s", filename, exc)
-            retval = 1
-    return retval
+            logger.error("%s: %s", path, exc)
+            failed = True
+    return int(failed)
 
 
 if __name__ == "__main__":

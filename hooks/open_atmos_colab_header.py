@@ -71,11 +71,8 @@ def looks_like_header(cell_source: str) -> bool:
 def check_colab_header(notebook_path, repo_name, fix, hook_version):
     """check if colab header is correct"""
     nb = nbformat.read(notebook_path, as_version=nbformat.NO_CONVERT)
-
-    if len(nb.cells) < 3:
-        raise ValueError("Notebook should have at least 3 cells")
-
     header_index = None
+
     for idx, cell in enumerate(nb.cells):
         if cell.cell_type == "code" and looks_like_header(cell.source):
             header_index = idx

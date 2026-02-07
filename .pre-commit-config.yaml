@@ -17,6 +17,7 @@ repos:
     rev: 2.1.1
     hooks:
       - id: enforce-notebook-run-order
+        exclude: tests/examples/bad.ipynb
 
   - repo: local
     hooks:

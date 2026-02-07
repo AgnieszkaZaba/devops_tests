@@ -20,9 +20,10 @@ jobs:
     steps:
     - uses: actions/checkout@v2
     - uses: actions/setup-python@v5
-    - run: pip install .
-    - run: pip install pylint
-    - run: pylint --unsafe-load-any-extension=y --disable=fixme $(git ls-files '*.py')
+    - run: |
+        pip install .
+        pip install pylint
+        pylint --unsafe-load-any-extension=y --disable=fixme $(git ls-files '*.py')
 
   precommit:
     runs-on: ubuntu-latest
