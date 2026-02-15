@@ -1,6 +1,10 @@
 #!/usr/bin/env python3
 """
 Checks notebooks structure required in open-atmos projects.
+Requirements:
+- first cell contains three correct badges
+- second cell is of type markdown
+- third cell is Colab magick cell
 """
 
 from __future__ import annotations

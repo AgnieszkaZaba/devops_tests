@@ -1,5 +1,12 @@
 # pylint: disable=missing-function-docstring
+"""
+Unit test for checking correct error message
+when running hooks on example files (good.ipynb, bad.ipynb).
 
+Test for local pre-commit hooks:
+- notebook_output,
+- check_notebooks.
+"""
 
 from __future__ import annotations
 
