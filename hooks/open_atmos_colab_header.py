@@ -29,6 +29,7 @@ def extract_versions(cell_source: str, repo_name: str):
         f"{repo_name}-examples"
     ):
         return None, None
+    print(examples_pkg, main_pkg)
     return examples_pkg[len(f"{repo_name}-examples") :], main_pkg[len(repo_name) :]
 
 
@@ -88,9 +89,6 @@ def check_colab_header(notebook_path, repo_name, fix, hook_version):
     header_cell = nb.cells[header_index]
     examples_version, main_version = extract_versions(header_cell.source, repo_name)
 
-    if examples_version is None or main_version is None:
-        raise ValueError("Colab header is malformed")
-
     if examples_version != main_version:
         raise ValueError(
             f"Version mismatch in header: {examples_version!r} != {main_version!r}"
@@ -102,7 +100,9 @@ def check_colab_header(notebook_path, repo_name, fix, hook_version):
     modified = False
     if header_cell.source != correct_header:
         if not fix:
-            raise ValueError("Colab header is incorrect")
+            raise ValueError(
+                f"Incorrect Colab header.\n Expected header:\n---\n{correct_header}\n---"
+            )
         header_cell.source = correct_header
         modified = True
 
