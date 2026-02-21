@@ -101,7 +101,9 @@ def check_colab_header(notebook_path, repo_name, fix, hook_version):
     if header_cell.source != correct_header:
         if not fix:
             raise ValueError(
-                f"{notebook_path}\nIncorrect Colab header.\n Expected header:\n---\n{correct_header}\n---"
+                f"{notebook_path}\n"
+                f"Incorrect Colab cell, expected header:\n"
+                f"---\n{correct_header}\n---"
             )
         header_cell.source = correct_header
         modified = True
