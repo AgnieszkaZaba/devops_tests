@@ -64,8 +64,8 @@ def repo_path():
 
 def open_and_test_notebooks(
     args,
-    test_functions: list[Callable[[nbformat.NotebookNode, str], Iterable[Any]]],
-) -> int:
+    test_functions,
+):
     """
     Run notebook tests on a list of filenames using generator-based hooks.
 
