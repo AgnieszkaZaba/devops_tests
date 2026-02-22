@@ -14,18 +14,18 @@
   stages: [pre-commit]
   types: [jupyter]
 
-- id: notebooks-output
-  name: notebooks output
+- id: check-notebook-output
+  name: check notebook output
   description: check if notebooks are executed and without errors and warnings
-  entry: notebooks_output
+  entry: check_notebook_output
   language: python
   stages: [pre-commit]
   types: [jupyter]
 
-- id: notebooks-using-jupyter-utils
-  name: notebooks using open-atmos-jupyter-utils
+- id: check-notebook-using-jupyter-utils
+  name: check notebook using open-atmos-jupyter-utils
   description: check if notebook use show_anim() and show_plot() methods from open-atmos-jupyter-utils
-  entry: notebooks_using_jupyter_utils
+  entry: check_notebook_using_jupyter_utils
   language: python
   stages: [pre-commit]
   types: [jupyter]

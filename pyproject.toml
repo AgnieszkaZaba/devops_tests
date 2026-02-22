@@ -29,5 +29,5 @@ dynamic = ['version']
 [project.scripts]
 check_notebooks = "hooks.check_notebooks:main"
 check_notebook_open_atmos_structure = "hooks.check_notebook_open_atmos_structure:main"
-notebooks_output = "hooks.notebooks_output:main"
-notebooks_using_jupyter_utils = "hooks.notebooks_using_jupyter_utils:main"
+notebooks_output = "hooks.check_notebook_output:main"
+notebooks_using_jupyter_utils = "hooks.check_notebook_using_jupyter_utils:main"

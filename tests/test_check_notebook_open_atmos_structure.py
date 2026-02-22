@@ -14,6 +14,9 @@ import pytest
 
 from hooks import check_notebook_open_atmos_structure as cb
 
+REPO_NAME = "devops_tests"
+REPO_OWNER = "open-atmos"
+
 
 def _write_nb_and_return_path(tmp_path, nb, name="nb.ipynb"):
     p = tmp_path / name
@@ -24,15 +27,13 @@ def _write_nb_and_return_path(tmp_path, nb, name="nb.ipynb"):
 def test_good_notebook_header_and_second_cell(tmp_path):
     # arrange
     nb_path = tmp_path / "good.ipynb"
-    repo_name = "devops_tests"
-    repo_owner = "open-atmos"
 
     relpath = cb.relative_path(nb_path, tmp_path)
     first_cell = "\n".join(
         [
-            cb.preview_badge_markdown(relpath, repo_name, repo_owner),
-            cb.mybinder_badge_markdown(relpath, repo_name, repo_owner),
-            cb.colab_badge_markdown(relpath, repo_name, repo_owner),
+            cb.preview_badge_markdown(relpath, REPO_NAME, REPO_OWNER),
+            cb.mybinder_badge_markdown(relpath, REPO_NAME, REPO_OWNER),
+            cb.colab_badge_markdown(relpath, REPO_NAME, REPO_OWNER),
         ]
     )
 
@@ -47,18 +48,18 @@ def test_good_notebook_header_and_second_cell(tmp_path):
     path = _write_nb_and_return_path(tmp_path, nb, name="good.ipynb")
 
     # assert
-    cb.test_notebook_has_at_least_three_cells(path)
+    cb.test_notebook_has_at_least_three_cells(path, nb)
     cb.test_first_cell_contains_three_badges(
-        path, repo_name, repo_owner, repo_root=tmp_path
+        path, nb, repo_name=REPO_NAME, repo_owner=REPO_OWNER, repo_root=tmp_path
     )
-    cb.test_second_cell_is_a_markdown_cell(path)
+    cb.test_second_cell_is_a_markdown_cell(path, nb)
 
 
 def test_too_few_cells_raises(tmp_path):
     nb = new_notebook(cells=[new_markdown_cell("only one cell")])
     path = _write_nb_and_return_path(tmp_path, nb, name="few.ipynb")
     with pytest.raises(ValueError):
-        cb.test_notebook_has_at_least_three_cells(path)
+        cb.test_notebook_has_at_least_three_cells(path, nb)
 
 
 def test_first_cell_bad_badges_raises(tmp_path):
@@ -72,7 +73,11 @@ def test_first_cell_bad_badges_raises(tmp_path):
     path = _write_nb_and_return_path(tmp_path, nb, name="badbadges.ipynb")
     with pytest.raises(ValueError):
         cb.test_first_cell_contains_three_badges(
-            path, "devops_tests", repo_root=pathlib.Path("")
+            path,
+            nb,
+            repo_name=REPO_NAME,
+            repo_owner=REPO_OWNER,
+            repo_root=pathlib.Path(""),
         )
 
 
@@ -86,4 +91,4 @@ def test_second_cell_not_markdown_raises(tmp_path):
     )
     path = _write_nb_and_return_path(tmp_path, nb, name="second_not_md.ipynb")
     with pytest.raises(ValueError):
-        cb.test_second_cell_is_a_markdown_cell(path)
+        cb.test_second_cell_is_a_markdown_cell(path, nb)

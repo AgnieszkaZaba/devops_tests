@@ -10,9 +10,9 @@ accept valid notebooks and raise on invalid ones.
 import pytest
 from nbformat.v4 import new_notebook, new_code_cell, new_markdown_cell
 
-from hooks import notebooks_output as no
+from hooks import check_notebook_output as no
 from hooks import check_notebooks as cn
-from hooks import notebooks_using_jupyter_utils as nuju
+from hooks import check_notebook_using_jupyter_utils as nuju
 
 
 def test_good_notebook_passes_all_checks():
