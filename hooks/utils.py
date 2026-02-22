@@ -4,13 +4,34 @@ Utils functions to reuse in different parts of the codebase
 
 import os
 import pathlib
-import argparse
+from pathlib import Path
 from git import Git
+
+from dataclasses import dataclass
+from typing import Callable, Iterable, Any
 import nbformat
 
 
-class NotebookTestError(BaseException):
-    """Raised when a notebook validation test fails."""
+@dataclass
+class NotebookError:
+    path: str
+    line: int
+    col: int
+    code: str
+    message: str
+
+    def format(self) -> str:
+        return f"{self.path}:{self.line}:{self.col}: {self.code} {self.message}"
+
+
+def cell_error(path, cell_idx, code, message):
+    return NotebookError(
+        path=path,
+        line=cell_idx + 1,
+        col=1,
+        code=code,
+        message=message,
+    )
 
 
 def find_files(path_to_folder_from_project_root=".", file_extension=None):
@@ -41,20 +62,51 @@ def repo_path():
     return path
 
 
-def open_and_test_notebooks(argv, test_functions):
-    """Create argparser and run notebook tests"""
-    parser = argparse.ArgumentParser()
-    parser.add_argument("filenames", nargs="*", help="Filenames to check.")
-    args = parser.parse_args(argv)
+def open_and_test_notebooks(
+    filenames: list[str],
+    test_functions: list[Callable[[nbformat.NotebookNode, str], Iterable[Any]]],
+) -> int:
+    """
+    Run notebook tests on a list of filenames using generator-based hooks.
 
-    retval = 0
-    for filename in args.filenames:
-        with open(filename, encoding="utf8") as notebook_file:
-            notebook = nbformat.read(notebook_file, nbformat.NO_CONVERT)
-            for func in test_functions:
-                try:
-                    func(notebook)
-                except NotebookTestError as e:
-                    print(f"{filename} : {e}")
-                    retval = 1
-    return retval
+    Each test function should accept two arguments:
+        notebook: nbformat.NotebookNode
+        notebook_filename: str
+    and yield NotebookError objects.
+    """
+    all_errors = []
+
+    for filename in filenames:
+        notebook_path = Path(filename)
+        try:
+            with notebook_path.open(encoding="utf8") as f:
+                notebook = nbformat.read(f, nbformat.NO_CONVERT)
+        except Exception as exc:
+            all_errors.append(
+                cell_error(
+                    filename,
+                    0,
+                    code="NB000",
+                    message=f"Failed to read notebook: {exc}",
+                )
+            )
+            continue
+
+        for test_func in test_functions:
+            try:
+                for error in test_func(notebook, filename):
+                    all_errors.append(error)
+            except Exception as exc:
+                all_errors.append(
+                    cell_error(
+                        filename,
+                        0,
+                        code="NBXXX",
+                        message=f"Exception in test {test_func.__name__}: {exc}",
+                    )
+                )
+
+    for error in all_errors:
+        print(error.format())
+
+    return 1 if all_errors else 0

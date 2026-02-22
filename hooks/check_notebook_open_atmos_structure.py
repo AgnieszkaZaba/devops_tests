@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Checks notebooks structure required in open-atmos projects.
+Checks notebook structure required in open-atmos projects.
 Requirements:
 - first cell contains three correct badges
 - second cell is of type markdown
@@ -11,18 +11,17 @@ from __future__ import annotations
 
 import argparse
 import logging
-from collections.abc import Sequence
+from collections.abc import Sequence, Iterable
 from pathlib import Path
-from typing import Iterable, List, Tuple, Optional
+from typing import Optional, List, Tuple
 
 import nbformat
 from nbformat import NotebookNode
 
+from .utils import cell_error, open_and_test_notebooks
 from .open_atmos_colab_header import check_colab_header
-from .utils import NotebookTestError
 
 REPO_OWNER_DEFAULT = "open-atmos"
-
 
 logger = logging.getLogger(__name__)
 
@@ -48,6 +47,7 @@ def resolve_repo_root(
                     logger.debug("Discovered git repository root: %s", root)
                     return root
             except Exception as exc:  # pylint: disable=broad-exception-caught
+                repo = None
                 logger.debug("Git repo detection failed for %s: %s", start_path, exc)
         except ImportError as exc:
             logger.debug("GitPython not available or import failed: %s", exc)
@@ -74,32 +74,32 @@ def relative_path(absolute_path, repo_root):
 
 def preview_badge_markdown(relpath: str, repo_name: str, repo_owner: str) -> str:
     """Create markdown for the GitHub-preview badge."""
-    svg_badge_url = (
+    url = (
         "https://img.shields.io/static/v1?"
         + "label=render%20on&logo=github&color=87ce3e&message=GitHub"
     )
     link = f"https://github.com/{repo_owner}/{repo_name}/blob/main/{relpath}"
-    return f"[![preview notebook]({svg_badge_url})]({link})"
+    return f"[![preview notebook]({url})]({link})"
 
 
 def mybinder_badge_markdown(relpath: str, repo_name: str, repo_owner: str) -> str:
     """Create markdown for the Binder badge."""
-    svg_badge_url = "https://mybinder.org/badge_logo.svg"
+    url = "https://mybinder.org/badge_logo.svg"
     link = (
         f"https://mybinder.org/v2/gh/{repo_owner}/{repo_name}.git/main?urlpath=lab/tree/"
         + f"{relpath}"
     )
-    return f"[![launch on mybinder.org]({svg_badge_url})]({link})"
+    return f"[![launch on mybinder.org]({url})]({link})"
 
 
 def colab_badge_markdown(relpath: str, repo_name: str, repo_owner: str) -> str:
     """Create markdown for the Colab badge."""
-    svg_badge_url = "https://colab.research.google.com/assets/colab-badge.svg"
+    url = "https://colab.research.google.com/assets/colab-badge.svg"
     link = (
         f"https://colab.research.google.com/github/{repo_owner}/{repo_name}/blob/main/"
         + f"{relpath}"
     )
-    return f"[![launch on Colab]({svg_badge_url})]({link})"
+    return f"[![launch on Colab]({url})]({link})"
 
 
 def expected_badges_for(
@@ -123,64 +123,48 @@ def expected_badges_for(
 
 
 def read_notebook(path: Path) -> NotebookNode:
-    """Read a Jupyter notebook without format conversion."""
     with path.open(encoding="utf8") as fp:
         return nbformat.read(fp, nbformat.NO_CONVERT)
 
 
 def write_notebook(path: Path, nb: NotebookNode) -> None:
-    """Write a Jupyter notebook to disk."""
     with path.open("w", encoding="utf8") as fp:
         nbformat.write(nb, fp)
 
 
 def first_cell_lines(nb: NotebookNode) -> List[str]:
-    """Return list of stripped lines from the first cell if it's markdown, else []"""
-    if not nb.cells:
+    if not nb.cells or nb.cells[0].cell_type != "markdown":
         return []
-    first = nb.cells[0]
-    if first.cell_type != "markdown":
-        return []
-    return [ln.strip() for ln in str(first.source).splitlines() if ln.strip() != ""]
+    return [ln.strip() for ln in str(nb.cells[0].source).splitlines() if ln.strip()]
 
 
 def badges_match(
     actual_lines: Iterable[str], expected_lines: Iterable[str]
 ) -> Tuple[bool, str]:
-    """
-    Check whether the expected badge lines are present in actual_lines.
-    Tolerant: ignores order, strips whitespace.
-    Returns (matches, message). Message empty on match else explains which badges missing.
-    """
     actual_set = {ln.strip() for ln in actual_lines}
-    expected_list = list(expected_lines)
-    missing = [exp for exp in expected_list if exp.strip() not in actual_set]
+    missing = [exp for exp in expected_lines if exp.strip() not in actual_set]
     if not missing:
         return True, ""
     return False, f"Missing badges: {missing}"
 
 
-def test_notebook_has_at_least_three_cells(notebook_filename: str) -> None:
+def test_notebook_has_at_least_three_cells(notebook, filename) -> Iterable:
     """checks if all notebooks have at least three cells"""
-    nb = read_notebook(Path(notebook_filename))
-    if len(nb.cells) < 3:
-        raise ValueError("Notebook should have at least 3 cells")
+    if len(notebook.cells) < 3:
+        yield cell_error(
+            filename,
+            0,
+            code="NB003",
+            message="Insufficient number of cells (minimum required is 3).",
+        )
 
 
 def test_first_cell_contains_three_badges(
     notebook_filename: str,
     repo_name: str,
-    repo_owner: str = REPO_OWNER_DEFAULT,
-    repo_root: Optional[Path] = None,
-) -> None:
-    """
-    checks if the notebook's first cell contains the three badges.
-    Raises ValueError on failure.
-
-    The optional repo_root can be provided to control how the notebook path is
-    converted into the remote URL. If None, the module will attempt to detect
-    a git repo root and fall back to cwd().
-    """
+    repo_owner: str,
+    repo_root: Path,
+) -> Iterable:
     nb = read_notebook(Path(notebook_filename))
     lines = first_cell_lines(nb)
     expected = expected_badges_for(
@@ -188,79 +172,95 @@ def test_first_cell_contains_three_badges(
     )
     ok, msg = badges_match(lines, expected)
     if not ok:
-        raise ValueError(msg)
+        yield cell_error(notebook_filename, 0, code="NB004", message=msg)
 
 
-def test_second_cell_is_a_markdown_cell(notebook_filename: str) -> None:
-    """checks if all notebooks have their second cell as markdown"""
-    nb = read_notebook(Path(notebook_filename))
-    if len(nb.cells) < 2:
-        raise ValueError("Notebook has no second cell")
-    if nb.cells[1].cell_type != "markdown":
-        raise ValueError("Second cell is not a markdown cell")
+def test_second_cell_is_a_markdown_cell(notebook, filename) -> Iterable:
+    if len(notebook.cells) < 2:
+        yield cell_error(
+            filename, 1, code="NB200", message="Notebook has no second cell."
+        )
+    elif notebook.cells[1].cell_type != "markdown":
+        yield cell_error(
+            filename,
+            1,
+            code="NB201",
+            message="Second cell is not a markdown cell",
+        )
+
+
+def test_colab_header(
+    notebook_filename: str, repo_name: str, fix_header: bool = False
+) -> Iterable:
+    """Wrap check_colab_header to yield errors instead of raising."""
+    try:
+        yield from check_colab_header(
+            Path(notebook_filename), repo_name, fix_header, ""
+        )
+    except Exception as exc:
+        yield cell_error(
+            notebook_filename, 2, code="NB205", message=f"Colab header error: {exc}"
+        )
 
 
 def build_parser() -> argparse.ArgumentParser:
-    """Build parser for command line arguments."""
     p = argparse.ArgumentParser()
     p.add_argument("--repo-name", required=True)
     p.add_argument("--repo-owner", default=REPO_OWNER_DEFAULT)
     p.add_argument(
         "--fix-header",
         action="store_true",
-        help="If set, attempt to fix notebooks missing the header.",
+        help="Attempt to fix notebooks missing header",
     )
     p.add_argument(
-        "--no-git",
-        action="store_true",
-        help="Do not attempt to detect git repo root; use cwd()",
+        "--no-git", action="store_true", help="Do not detect git repo root, use cwd()"
     )
-    p.add_argument(
-        "--repo-root", help="Explicit repository root to use when building URLs"
-    )
+    p.add_argument("--repo-root", help="Explicit repository root path")
     p.add_argument("--verbose", action="store_true", help="Enable debug logging")
-    p.add_argument("filenames", nargs="*", help="Filenames to check.")
+    p.add_argument("filenames", nargs="*", help="Notebooks to check")
     return p
 
 
 def configure_logging(verbose: bool) -> None:
-    """Configure logging with --verbose flag"""
     level = logging.DEBUG if verbose else logging.INFO
     logging.basicConfig(level=level, format="%(levelname)s: %(message)s")
 
 
 def main(argv: Sequence[str] | None = None) -> int:
-    """Test notebook structure:
-    - first cell with 3 correct badges,
-    - second cell is of type markdown (best if with notebook description),
-    - third cell is a Colab magick cell.
-    """
     args = build_parser().parse_args(argv)
     configure_logging(args.verbose)
+
     explicit_repo_root = Path(args.repo_root) if args.repo_root else None
     prefer_git = not args.no_git
 
-    failed = False
-    for filename in args.filenames:
-        path = Path(filename)
-        try:
+    repo_root = None
+    if explicit_repo_root or prefer_git:
+        if args.filenames:
             repo_root = resolve_repo_root(
-                path,
+                Path(args.filenames[0]),
                 explicit_root=explicit_repo_root,
                 prefer_git=prefer_git,
             )
-            test_notebook_has_at_least_three_cells(filename)
-            test_first_cell_contains_three_badges(
-                filename, args.repo_name, args.repo_owner, repo_root
-            )
-            test_second_cell_is_a_markdown_cell(filename)
-            check_colab_header(path, args.repo_name, args.fix_header, "")
-            logger.info("%s: OK", path)
 
-        except NotebookTestError as exc:
-            logger.error("%s: %s", path, exc)
-            failed = True
-    return int(failed)
+    def wrap_first_cell_badges(notebook, filename):
+        yield from test_first_cell_contains_three_badges(
+            filename, args.repo_name, args.repo_owner, repo_root
+        )
+
+    def wrap_colab_header(notebook, filename):
+        yield from test_colab_header(filename, args.repo_name, args.fix_header)
+
+    test_functions = [
+        test_notebook_has_at_least_three_cells,
+        wrap_first_cell_badges,
+        test_second_cell_is_a_markdown_cell,
+        wrap_colab_header,
+    ]
+
+    return open_and_test_notebooks(
+        args.filenames,
+        test_functions,
+    )
 
 
 if __name__ == "__main__":

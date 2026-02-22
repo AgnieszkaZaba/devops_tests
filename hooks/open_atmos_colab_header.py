@@ -4,6 +4,9 @@ from __future__ import annotations
 
 import re
 import nbformat
+from pygments.styles.dracula import yellow
+
+from .utils import cell_error
 
 _PIP_INSTALL_RE = re.compile(
     r"pip_install_on_colab\(\s*"
@@ -84,14 +87,17 @@ def check_colab_header(notebook_path, repo_name, fix, hook_version):
         header_source = build_header(repo_name, final_version)
         nb.cells.insert(2, nbformat.v4.new_code_cell(header_source))
         nbformat.write(nb, notebook_path)
-        return True
+        return
 
     header_cell = nb.cells[header_index]
     examples_version, main_version = extract_versions(header_cell.source, repo_name)
 
     if examples_version != main_version:
-        raise ValueError(
-            f"{notebook_path}\nVersion mismatch in header: {examples_version!r} != {main_version!r}"
+        yield cell_error(
+            notebook_path,
+            header_index,
+            "NB301",
+            f"\nVersion mismatch in header: {examples_version!r} != {main_version!r}",
         )
 
     final_version = resolve_version(main_version, hook_version)
@@ -100,17 +106,27 @@ def check_colab_header(notebook_path, repo_name, fix, hook_version):
     modified = False
     if header_cell.source != correct_header:
         if not fix:
-            raise ValueError(
-                f"{notebook_path}\n"
-                f"Incorrect Colab cell, expected header:\n"
-                f"---\n{correct_header}\n---"
+            yield cell_error(
+                notebook_path,
+                header_index,
+                "NB302",
+                f"Incorrect Colab cell, expected header:\n---\n{correct_header}\n---",
             )
-        header_cell.source = correct_header
-        modified = True
+        else:
+            header_cell.source = correct_header
+            modified = True
 
     if header_index != 2:
-        nb.cells.insert(2, nb.cells.pop(header_index))
-        modified = True
+        if not fix:
+            yield cell_error(
+                notebook_path,
+                header_index,
+                code="NB303",
+                message="Colab header in wrong position. Expected cell index: 2.",
+            )
+        else:
+            nb.cells.insert(2, nb.cells.pop(header_index))
+            modified = True
 
     if modified:
         nbformat.write(nb, notebook_path)

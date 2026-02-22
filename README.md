@@ -22,21 +22,53 @@ if 'google.colab' in sys.modules:
     pip_install_on_colab('devops_tests-examples', 'devops_tests')
 ```
 
-## Error and warning labeling
-### **0xx -> Execution problems**
-- NB000 missing execution count
-- NB001 empty execution
-- NB002 cell contains error
+## 0xx -> Execution Problems
 
-### **1xx -> Badges problems**
-- NB100 wrong GitHub preview badge
-- NB101 wrong mybinder badge
-- NB102 wrong Colab badge
+These errors relate to notebook execution state and structural integrity.
 
-### **2xx -> Markdown problems**
-- NB200 markdown cell missing
+- **NB000** – Missing execution count
+- **NB001** – Empty execution
+- **NB002** – Cell contains execution error
+- **NB003** – Insufficient number of cells (minimum required not met)
+- **NB004** – Invalid or missing required content in first cell
 
-### **3xx -> Colab header problems**
-- NB300 header missing
-- NB301 version mismatch
-- NB302 header in wrong position
+---
+
+## 1xx -> Badge Problems
+
+These errors relate to required badges in the first notebook cell.
+
+- **NB100** - Incorrect GitHub preview badge
+- **NB101** – Incorrect MyBinder badge
+- **NB102** – Incorrect Colab badge
+
+---
+
+## 2xx -> Markdown Problems
+
+These errors relate to required markdown structure in the second notebook cell.
+
+- **NB200** – Required markdown cell missing
+- **NB201** – Invalid markdown structure
+- **NB202** – Required markdown section missing
+
+---
+
+## 3xx -> Colab Header Problems
+
+These errors relate to the required Colab setup header.
+
+- **NB300** – Header missing
+- **NB301** – Header version mismatch
+- **NB302** – Invalid header content
+- **NB303** – Header in incorrect position
+
+---
+
+## 4xx -> `open-atmos-jupyter-utils` Problems
+
+These errors relate to the usage of `show_anim()` and `show_plot()`
+functions from `open-atmos-jupyter-utils` package required when matplotlib is used.
+
+- **NB400** - show_plot not used
+- **NB401** - show_anim not used
