@@ -9,12 +9,12 @@ from collections.abc import Sequence
 from .utils import open_and_test_notebooks, cell_error
 
 
-def test_show_plot_used_instead_of_matplotlib(notebook, filename):
+def test_show_plot_used_instead_of_matplotlib(nb_path, nb):
     """checks if plotting is done with open_atmos_jupyter_utils show_plot()"""
     matplot_used = False
     show_plot_used = False
     matplot_idx = 0
-    for idx, cell in enumerate(notebook.cells):
+    for idx, cell in enumerate(nb.cells):
         if cell.cell_type == "code":
             if "pyplot.show(" in cell.source or "plt.show(" in cell.source:
                 matplot_used = True
@@ -23,18 +23,18 @@ def test_show_plot_used_instead_of_matplotlib(notebook, filename):
                 show_plot_used = True
     if matplot_used and not show_plot_used:
         yield cell_error(
-            filename,
+            nb_path,
             matplot_idx,
             code="NB400",
             message="If using matplotlib, please use open_atmos_jupyter_utils.show_plot()",
         )
 
 
-def test_show_anim_used_instead_of_matplotlib(notebook, filename):
+def test_show_anim_used_instead_of_matplotlib(nb_path, nb):
     """checks if animation generation is done with open_atmos_jupyter_utils show_anim()"""
     matplot_used = False
     show_anim_used = False
-    for cell in notebook.cells:
+    for cell in nb.cells:
         if cell.cell_type == "code":
             if (
                 "funcAnimation" in cell.source
@@ -46,7 +46,7 @@ def test_show_anim_used_instead_of_matplotlib(notebook, filename):
                 show_anim_used = True
     if matplot_used and not show_anim_used:
         yield cell_error(
-            filename,
+            nb_path,
             matplot_idx,
             code="NB401",
             message="If using matplotlib for animations, "
@@ -62,7 +62,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     args = parser.parse_args(argv)
 
     return open_and_test_notebooks(
-        filenames=args.filenames,
+        args,
         test_functions=[
             test_show_anim_used_instead_of_matplotlib,
             test_show_plot_used_instead_of_matplotlib,

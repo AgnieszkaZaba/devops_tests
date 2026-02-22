@@ -63,20 +63,20 @@ def repo_path():
 
 
 def open_and_test_notebooks(
-    filenames: list[str],
+    args,
     test_functions: list[Callable[[nbformat.NotebookNode, str], Iterable[Any]]],
 ) -> int:
     """
     Run notebook tests on a list of filenames using generator-based hooks.
 
-    Each test function should accept two arguments:
-        notebook: nbformat.NotebookNode
-        notebook_filename: str
-    and yield NotebookError objects.
+    Each test function should accept three arguments:
+        nb_path: Path,
+        nb: nbformat.NotebookNode
+    and yield NotebookError objects. Extra args must be handled by wrappers.
     """
     all_errors = []
 
-    for filename in filenames:
+    for filename in args.filenames:
         notebook_path = Path(filename)
         try:
             with notebook_path.open(encoding="utf8") as f:
@@ -94,7 +94,7 @@ def open_and_test_notebooks(
 
         for test_func in test_functions:
             try:
-                for error in test_func(notebook, filename):
+                for error in test_func(nb_path=notebook_path, nb=notebook):
                     all_errors.append(error)
             except Exception as exc:
                 all_errors.append(

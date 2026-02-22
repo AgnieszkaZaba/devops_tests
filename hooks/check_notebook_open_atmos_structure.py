@@ -122,16 +122,6 @@ def expected_badges_for(
     ]
 
 
-def read_notebook(path: Path) -> NotebookNode:
-    with path.open(encoding="utf8") as fp:
-        return nbformat.read(fp, nbformat.NO_CONVERT)
-
-
-def write_notebook(path: Path, nb: NotebookNode) -> None:
-    with path.open("w", encoding="utf8") as fp:
-        nbformat.write(nb, fp)
-
-
 def first_cell_lines(nb: NotebookNode) -> List[str]:
     if not nb.cells or nb.cells[0].cell_type != "markdown":
         return []
@@ -148,11 +138,11 @@ def badges_match(
     return False, f"Missing badges: {missing}"
 
 
-def test_notebook_has_at_least_three_cells(notebook, filename) -> Iterable:
+def test_notebook_has_at_least_three_cells(nb_path, nb) -> Iterable:
     """checks if all notebooks have at least three cells"""
-    if len(notebook.cells) < 3:
+    if len(nb.cells) < 3:
         yield cell_error(
-            filename,
+            nb_path,
             0,
             code="NB003",
             message="Insufficient number of cells (minimum required is 3).",
@@ -160,46 +150,31 @@ def test_notebook_has_at_least_three_cells(notebook, filename) -> Iterable:
 
 
 def test_first_cell_contains_three_badges(
-    notebook_filename: str,
-    repo_name: str,
-    repo_owner: str,
-    repo_root: Path,
-) -> Iterable:
-    nb = read_notebook(Path(notebook_filename))
+    nb_path,
+    nb,
+    *,
+    repo_name,
+    repo_owner,
+    repo_root,
+):
     lines = first_cell_lines(nb)
-    expected = expected_badges_for(
-        Path(notebook_filename), repo_name, repo_owner, repo_root
-    )
+    expected = expected_badges_for(nb_path, repo_name, repo_owner, repo_root)
     ok, msg = badges_match(lines, expected)
     if not ok:
         yield cell_error(notebook_filename, 0, code="NB004", message=msg)
 
 
-def test_second_cell_is_a_markdown_cell(notebook, filename) -> Iterable:
-    if len(notebook.cells) < 2:
+def test_second_cell_is_a_markdown_cell(nb_path, nb):
+    if len(nb.cells) < 2:
         yield cell_error(
-            filename, 1, code="NB200", message="Notebook has no second cell."
+            nb_path, 1, code="NB200", message="Notebook has no second cell."
         )
-    elif notebook.cells[1].cell_type != "markdown":
+    elif nb.cells[1].cell_type != "markdown":
         yield cell_error(
-            filename,
+            nb_path,
             1,
             code="NB201",
             message="Second cell is not a markdown cell",
-        )
-
-
-def test_colab_header(
-    notebook_filename: str, repo_name: str, fix_header: bool = False
-) -> Iterable:
-    """Wrap check_colab_header to yield errors instead of raising."""
-    try:
-        yield from check_colab_header(
-            Path(notebook_filename), repo_name, fix_header, ""
-        )
-    except Exception as exc:
-        yield cell_error(
-            notebook_filename, 2, code="NB205", message=f"Colab header error: {exc}"
         )
 
 
@@ -242,24 +217,32 @@ def main(argv: Sequence[str] | None = None) -> int:
                 prefer_git=prefer_git,
             )
 
-    def wrap_first_cell_badges(notebook, filename):
+    def wrap_first_cell_badges(nb_path, nb):
         yield from test_first_cell_contains_three_badges(
-            filename, args.repo_name, args.repo_owner, repo_root
+            nb_path,
+            nb,
+            repo_name=args.repo_name,
+            repo_owner=args.repo_owner,
+            repo_root=repo_root,
         )
 
-    def wrap_colab_header(notebook, filename):
-        yield from test_colab_header(filename, args.repo_name, args.fix_header)
-
-    test_functions = [
-        test_notebook_has_at_least_three_cells,
-        wrap_first_cell_badges,
-        test_second_cell_is_a_markdown_cell,
-        wrap_colab_header,
-    ]
+    def wrap_colab_header(nb_path, nb):
+        yield from check_colab_header(
+            nb_path,
+            nb,
+            repo_name=args.repo_name,
+            fix=args.fix_header,
+            hook_version=None,
+        )
 
     return open_and_test_notebooks(
-        args.filenames,
-        test_functions,
+        args,
+        test_functions=[
+            test_notebook_has_at_least_three_cells,
+            wrap_first_cell_badges,
+            test_second_cell_is_a_markdown_cell,
+            wrap_colab_header,
+        ],
     )
 
 

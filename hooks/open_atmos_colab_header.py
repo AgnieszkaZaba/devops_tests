@@ -72,11 +72,9 @@ def looks_like_header(cell_source: str) -> bool:
     return all(pat in cell_source for pat in HEADER_REQUIRED_PATTERNS)
 
 
-def check_colab_header(notebook_path, repo_name, fix, hook_version):
+def check_colab_header(nb_path, nb, *, repo_name, fix, hook_version):
     """check if colab header is correct"""
-    nb = nbformat.read(notebook_path, as_version=nbformat.NO_CONVERT)
     header_index = None
-
     for idx, cell in enumerate(nb.cells):
         if cell.cell_type == "code" and looks_like_header(cell.source):
             header_index = idx
@@ -86,7 +84,7 @@ def check_colab_header(notebook_path, repo_name, fix, hook_version):
         final_version = resolve_version(None, hook_version)
         header_source = build_header(repo_name, final_version)
         nb.cells.insert(2, nbformat.v4.new_code_cell(header_source))
-        nbformat.write(nb, notebook_path)
+        nbformat.write(nb, nb_path)
         return
 
     header_cell = nb.cells[header_index]
@@ -94,7 +92,7 @@ def check_colab_header(notebook_path, repo_name, fix, hook_version):
 
     if examples_version != main_version:
         yield cell_error(
-            notebook_path,
+            nb_path,
             header_index,
             "NB301",
             f"\nVersion mismatch in header: {examples_version!r} != {main_version!r}",
@@ -119,7 +117,7 @@ def check_colab_header(notebook_path, repo_name, fix, hook_version):
     if header_index != 2:
         if not fix:
             yield cell_error(
-                notebook_path,
+                nb_path,
                 header_index,
                 code="NB303",
                 message="Colab header in wrong position. Expected cell index: 2.",
@@ -129,5 +127,5 @@ def check_colab_header(notebook_path, repo_name, fix, hook_version):
             modified = True
 
     if modified:
-        nbformat.write(nb, notebook_path)
+        nbformat.write(nb, nb_path)
     return modified
