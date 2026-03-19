@@ -58,8 +58,7 @@ def test_good_notebook_header_and_second_cell(tmp_path):
 def test_too_few_cells_raises(tmp_path):
     nb = new_notebook(cells=[new_markdown_cell("only one cell")])
     path = _write_nb_and_return_path(tmp_path, nb, name="few.ipynb")
-    with pytest.raises(ValueError):
-        cb.test_notebook_has_at_least_three_cells(path, nb)
+    cb.test_notebook_has_at_least_three_cells(path, nb)
 
 
 def test_first_cell_bad_badges_raises(tmp_path):
@@ -71,14 +70,17 @@ def test_first_cell_bad_badges_raises(tmp_path):
         ]
     )
     path = _write_nb_and_return_path(tmp_path, nb, name="badbadges.ipynb")
-    with pytest.raises(ValueError):
+    errors = list(
         cb.test_first_cell_contains_three_badges(
             path,
             nb,
             repo_name=REPO_NAME,
             repo_owner=REPO_OWNER,
-            repo_root=pathlib.Path(""),
+            repo_root=tmp_path,
         )
+    )
+    assert len(errors) == 1
+    assert errors[0].code == "NB004"
 
 
 def test_second_cell_not_markdown_raises(tmp_path):
@@ -90,5 +92,6 @@ def test_second_cell_not_markdown_raises(tmp_path):
         ]
     )
     path = _write_nb_and_return_path(tmp_path, nb, name="second_not_md.ipynb")
-    with pytest.raises(ValueError):
-        cb.test_second_cell_is_a_markdown_cell(path, nb)
+    errors = list(cb.test_second_cell_is_a_markdown_cell(path, nb))
+    assert len(errors) == 1
+    assert errors[0].code == "NB201"

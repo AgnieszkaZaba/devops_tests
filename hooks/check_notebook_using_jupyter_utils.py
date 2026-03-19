@@ -33,8 +33,9 @@ def test_show_plot_used_instead_of_matplotlib(nb_path, nb):
 def test_show_anim_used_instead_of_matplotlib(nb_path, nb):
     """checks if animation generation is done with open_atmos_jupyter_utils show_anim()"""
     matplot_used = False
+    matplot_idx = 0
     show_anim_used = False
-    for cell in nb.cells:
+    for idx, cell in enumerate(nb.cells):
         if cell.cell_type == "code":
             if (
                 "funcAnimation" in cell.source
@@ -42,6 +43,7 @@ def test_show_anim_used_instead_of_matplotlib(nb_path, nb):
                 or "from matplotlib import animation" in cell.source
             ):
                 matplot_used = True
+                matplot_idx = idx
             if "show_anim(" in cell.source:
                 show_anim_used = True
     if matplot_used and not show_anim_used:

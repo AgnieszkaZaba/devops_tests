@@ -161,7 +161,7 @@ def test_first_cell_contains_three_badges(
     expected = expected_badges_for(nb_path, repo_name, repo_owner, repo_root)
     ok, msg = badges_match(lines, expected)
     if not ok:
-        yield cell_error(notebook_filename, 0, code="NB004", message=msg)
+        yield cell_error(nb_path, 0, code="NB004", message=msg)
 
 
 def test_second_cell_is_a_markdown_cell(nb_path, nb):
