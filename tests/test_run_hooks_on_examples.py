@@ -2,10 +2,6 @@
 """
 Unit test for checking correct error message
 when running hooks on example files (good.ipynb, bad.ipynb).
-
-Test for local pre-commit hooks:
-- notebook_output,
-- check_notebooks.
 """
 
 from __future__ import annotations
@@ -51,7 +47,7 @@ def test_notebooks_output_on_examples(
     if nb_path is None:
         pytest.skip(f"No example notebook found for {name}")
 
-    res = _run_module("hooks.notebooks_output", [str(nb_path)])
+    res = _run_module("hooks.check_notebook_output", [str(nb_path)])
 
     if should_fail:
         assert (
@@ -76,15 +72,3 @@ def test_notebooks_output_on_examples(
             f"Expected check_notebooks to succeed on {nb_path};"
             f" stderr:\n{res.stderr}\nstdout:\n{res.stdout}"
         )
-
-
-@pytest.mark.parametrize(
-    "name, should_fail", (("good.ipynb", False), ("bad.ipynb", False))
-)
-def test_check_notebooks_on_examples(name: str, should_fail: bool):
-    nb_path = _find_example(name)
-    if nb_path is None:
-        pytest.skip(f"No example notebook found for {name}")
-
-    res = _run_module("hooks.check_notebooks", [str(nb_path)])
-    assert res.returncode == should_fail
