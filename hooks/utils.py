@@ -8,7 +8,6 @@ from pathlib import Path
 from git import Git
 
 from dataclasses import dataclass
-from typing import Callable, Iterable, Any
 import nbformat
 
 

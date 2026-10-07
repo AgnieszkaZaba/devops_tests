@@ -105,7 +105,7 @@ def check_colab_header(nb_path, nb, *, repo_name, fix, hook_version):
     if header_cell.source != correct_header:
         if not fix:
             yield cell_error(
-                notebook_path,
+                nb_path,
                 header_index,
                 "NB302",
                 f"Incorrect Colab cell, expected header:\n---\n{correct_header}\n---",

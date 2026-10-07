@@ -7,10 +7,8 @@ These tests write small notebooks to temporary files and call the
 badge-check functions that expect filenames.
 """
 
-import pathlib
 import nbformat
 from nbformat.v4 import new_notebook, new_markdown_cell, new_code_cell
-import pytest
 
 from hooks import check_notebook_open_atmos_structure as cb
 

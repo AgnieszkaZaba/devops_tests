@@ -14,8 +14,6 @@ import logging
 from collections.abc import Sequence, Iterable
 from pathlib import Path
 from typing import Optional, List, Tuple
-
-import nbformat
 from nbformat import NotebookNode
 
 from .utils import cell_error, open_and_test_notebooks

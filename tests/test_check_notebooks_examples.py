@@ -7,7 +7,6 @@ validation functions exported by hooks.check_notebooks to ensure they
 accept valid notebooks and raise on invalid ones.
 """
 
-import pytest
 from nbformat.v4 import new_notebook, new_code_cell, new_markdown_cell
 
 from hooks import check_notebook_output as no
