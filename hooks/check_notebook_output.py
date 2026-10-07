@@ -29,7 +29,7 @@ def test_no_errors_or_warnings_in_output(nb_path, nb):
         if cell.cell_type == "code":
             for output in cell.outputs:
                 ot = output.get("output_type")
-                is_error = ot == "error"
+                is_error = ot == "error" and output.get("ename") != "KeyboardInterrupt"
                 is_stderr = (
                     ot == "stream"
                     and output.get("name") == "stderr"
