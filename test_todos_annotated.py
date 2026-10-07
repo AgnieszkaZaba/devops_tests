@@ -42,7 +42,7 @@ def _gh_issues():
         state="all",
         per_page=100,
     )
-    for page in pages:
+    for page in pages:  # pylint: disable=not-an-iterable
         for item in page.items:
             res[item.number] = item.state
     return res
