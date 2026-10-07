@@ -5,7 +5,7 @@ from __future__ import annotations
 import re
 import nbformat
 
-from .utils import cell_error
+from .utils import NotebookError
 
 _PIP_INSTALL_RE = re.compile(
     r"pip_install_on_colab\(\s*"
@@ -89,7 +89,7 @@ def check_colab_header(nb_path, nb, *, repo_name, fix, hook_version):
     examples_version, main_version = extract_versions(header_cell.source, repo_name)
 
     if examples_version != main_version:
-        yield cell_error(
+        yield NotebookError.cell_error(
             nb_path,
             header_index,
             "NB301",
@@ -102,7 +102,7 @@ def check_colab_header(nb_path, nb, *, repo_name, fix, hook_version):
     modified = False
     if header_cell.source != correct_header:
         if not fix:
-            yield cell_error(
+            yield NotebookError.cell_error(
                 nb_path,
                 header_index,
                 "NB302",
@@ -114,7 +114,7 @@ def check_colab_header(nb_path, nb, *, repo_name, fix, hook_version):
 
     if header_index != 2:
         if not fix:
-            yield cell_error(
+            yield NotebookError.cell_error(
                 nb_path,
                 header_index,
                 code="NB303",

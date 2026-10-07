@@ -6,7 +6,7 @@ from __future__ import annotations
 
 import argparse
 from collections.abc import Sequence
-from .utils import open_and_test_notebooks, cell_error
+from .utils import open_and_test_notebooks, NotebookError
 
 
 def test_show_plot_used_instead_of_matplotlib(nb_path, nb):
@@ -22,7 +22,7 @@ def test_show_plot_used_instead_of_matplotlib(nb_path, nb):
             if "show_plot(" in cell.source:
                 show_plot_used = True
     if matplot_used and not show_plot_used:
-        yield cell_error(
+        yield NotebookError.cell_error(
             nb_path,
             matplot_idx,
             code="NB400",
@@ -47,7 +47,7 @@ def test_show_anim_used_instead_of_matplotlib(nb_path, nb):
             if "show_anim(" in cell.source:
                 show_anim_used = True
     if matplot_used and not show_anim_used:
-        yield cell_error(
+        yield NotebookError.cell_error(
             nb_path,
             matplot_idx,
             code="NB401",

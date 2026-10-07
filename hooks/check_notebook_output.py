@@ -5,7 +5,7 @@ from __future__ import annotations
 
 import argparse
 from collections.abc import Sequence
-from .utils import open_and_test_notebooks, cell_error
+from .utils import open_and_test_notebooks, NotebookError
 
 
 def test_cell_contains_output(nb_path, nb):
@@ -13,7 +13,7 @@ def test_cell_contains_output(nb_path, nb):
     for cell_idx, cell in enumerate(nb.cells):
         if cell.cell_type == "code" and cell.source != "":
             if cell.execution_count is None:
-                yield cell_error(
+                yield NotebookError.cell_error(
                     nb_path,
                     cell_idx,
                     code="NB001",
@@ -38,7 +38,7 @@ def test_no_errors_or_warnings_in_output(nb_path, nb):
                 )
 
                 if is_error or is_stderr:
-                    yield cell_error(
+                    yield NotebookError.cell_error(
                         nb_path,
                         cell_idx,
                         code="NB002",
@@ -55,7 +55,7 @@ def test_jetbrains_bug_py_66491(nb_path, nb):
     https://youtrack.jetbrains.com/issue/PY-66491"""
     for idx, cell in enumerate(nb.cells):
         if cell.cell_type == "code" and not hasattr(cell, "execution_count"):
-            yield cell_error(
+            yield NotebookError.cell_error(
                 nb_path,
                 idx,
                 code="NB000",

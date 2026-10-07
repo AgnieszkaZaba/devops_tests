@@ -13,10 +13,9 @@ import argparse
 import logging
 from collections.abc import Sequence, Iterable
 from pathlib import Path
-from typing import Optional, List, Tuple
-from nbformat import NotebookNode
+from typing import Optional, List
 
-from .utils import cell_error, open_and_test_notebooks
+from .utils import open_and_test_notebooks, NotebookError
 from .open_atmos_colab_header import check_colab_header
 
 REPO_OWNER_DEFAULT = "open-atmos"
@@ -121,20 +120,21 @@ def expected_badges_for(
 
 
 def badges_match(
-    actual_lines: Iterable[str], expected_lines: Iterable[str]
-) -> Tuple[bool, str]:
+    actual_lines,
+    expected_lines,
+):
+    """compare actual badges with expected ones"""
     actual_set = {ln.strip() for ln in actual_lines}
     missing = [exp for exp in expected_lines if exp.strip() not in actual_set]
     if missing:
         return False, f"Missing badges: {missing}"
-    else:
-        return True, ""
+    return True, ""
 
 
 def test_notebook_has_at_least_three_cells(nb_path, nb) -> Iterable:
     """checks if all notebooks have at least three cells"""
     if len(nb.cells) < 3:
-        yield cell_error(
+        yield NotebookError.cell_error(
             nb_path,
             0,
             code="NB003",
@@ -150,9 +150,10 @@ def test_first_cell_contains_three_badges(
     repo_owner,
     repo_root,
 ):
-    if not ok:
-        yield cell_error(nb_path, 0, code="NB004", message=msg)
-
+    """
+    checks if all notebooks have correct three badges
+    at the beginning of the file in Markdown cell
+    """
     if not nb.cells or nb.cells[0].cell_type != "markdown":
         lines = []
     else:
@@ -162,16 +163,19 @@ def test_first_cell_contains_three_badges(
     expected = expected_badges_for(nb_path, repo_name, repo_owner, repo_root)
     ok, msg = badges_match(lines, expected)
     if not ok:
-        yield cell_error(nb_path, 0, code="NB004", message=msg)
+        yield NotebookError.cell_error(nb_path, 0, code="NB004", message=msg)
 
 
 def test_second_cell_is_a_markdown_cell(nb_path, nb):
+    """
+    check if second cell exists and is a markdown type
+    """
     if len(nb.cells) < 2:
-        yield cell_error(
+        yield NotebookError.cell_error(
             nb_path, 1, code="NB200", message="Notebook has no second cell."
         )
     elif nb.cells[1].cell_type != "markdown":
-        yield cell_error(
+        yield NotebookError.cell_error(
             nb_path,
             1,
             code="NB201",
@@ -180,6 +184,9 @@ def test_second_cell_is_a_markdown_cell(nb_path, nb):
 
 
 def build_parser() -> argparse.ArgumentParser:
+    """
+    Setup parser for pre-commit hooks with options for debugging.
+    """
     p = argparse.ArgumentParser()
     p.add_argument("--repo-name", required=True)
     p.add_argument("--repo-owner", default=REPO_OWNER_DEFAULT)
@@ -198,11 +205,13 @@ def build_parser() -> argparse.ArgumentParser:
 
 
 def configure_logging(verbose: bool) -> None:
+    """define how to log during debugging"""
     level = logging.DEBUG if verbose else logging.INFO
     logging.basicConfig(level=level, format="%(levelname)s: %(message)s")
 
 
 def main(argv: Sequence[str] | None = None) -> int:
+    """Get parsed information and run tests defined in test functions."""
     args = build_parser().parse_args(argv)
     configure_logging(args.verbose)
 

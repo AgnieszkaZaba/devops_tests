@@ -12,24 +12,28 @@ import nbformat
 
 @dataclass
 class NotebookError:
+    """Custom error format for notebook checks."""
+
     path: str
     line: int
     col: int
     code: str
     message: str
 
+    @classmethod
+    def cell_error(cls, path, cell_idx, code, message):
+        """method for defining new errors which can be yield"""
+        return cls(
+            path=path,
+            line=cell_idx + 1,
+            col=1,
+            code=code,
+            message=message,
+        )
+
     def format(self) -> str:
+        """format for error messages"""
         return f"{self.path}:{self.line}:{self.col}: {self.code} {self.message}"
-
-
-def cell_error(path, cell_idx, code, message):
-    return NotebookError(
-        path=path,
-        line=cell_idx + 1,
-        col=1,
-        code=code,
-        message=message,
-    )
 
 
 def find_files(path_to_folder_from_project_root=".", file_extension=None):
@@ -66,11 +70,6 @@ def open_and_test_notebooks(
 ):
     """
     Run notebook tests on a list of filenames using generator-based hooks.
-
-    Each test function should accept three arguments:
-        nb_path: Path,
-        nb: nbformat.NotebookNode
-    and yield NotebookError objects. Extra args must be handled by wrappers.
     """
     all_errors = []
 
@@ -79,9 +78,9 @@ def open_and_test_notebooks(
         try:
             with notebook_path.open(encoding="utf8") as f:
                 notebook = nbformat.read(f, nbformat.NO_CONVERT)
-        except Exception as exc:
+        except (OSError, nbformat.ValidationError) as exc:
             all_errors.append(
-                cell_error(
+                NotebookError.cell_error(
                     filename,
                     0,
                     code="NB000",
@@ -94,13 +93,14 @@ def open_and_test_notebooks(
             try:
                 for error in test_func(nb_path=notebook_path, nb=notebook):
                     all_errors.append(error)
-            except Exception as exc:
+            except Exception as exc:  # pylint: disable=broad-exception-caught
                 all_errors.append(
-                    cell_error(
+                    NotebookError.cell_error(
                         filename,
                         0,
                         code="NBXXX",
-                        message=f"Exception in test {test_func.__name__}: {exc}",
+                        message=f"Exception in test {test_func.__name__}: "
+                        f"{type(exc).__name__}: {exc}",
                     )
                 )
 
