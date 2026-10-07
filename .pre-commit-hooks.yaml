@@ -1,11 +1,3 @@
-- id: check-notebooks
-  name: check notebooks
-  description: check Jupyter Notebook contents
-  entry: check_notebooks
-  language: python
-  stages: [pre-commit]
-  types: [jupyter]
-
 - id: check-notebook-open-atmos-structure
   name: check notebook has open-atmos structure
   entry: check_notebook_open_atmos_structure

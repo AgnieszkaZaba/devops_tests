@@ -21,15 +21,6 @@ repos:
 
   - repo: local
     hooks:
-      - id: check-notebooks
-        name: check notebooks
-        entry: check_notebooks
-        additional_dependencies:
-          - nbformat
-        language: python
-        types: [jupyter]
-        exclude: tests/examples/bad.ipynb
-
       - id: check-notebook-open-atmos-structure
         name: check notebook has open-atmos structure
         entry: check_notebook_open_atmos_structure

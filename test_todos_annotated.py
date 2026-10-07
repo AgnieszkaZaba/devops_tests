@@ -35,13 +35,13 @@ def _gh_issues():
     res = {}
     repo = os.path.basename(Git(".").rev_parse("--show-toplevel"))
     api = GhApi(owner="open-atmos", repo=repo)
-    for page in paged(
+    for page in paged(  # pylint: disable=not-an-iterable
         api.issues.list_for_repo,  # pylint: disable=no-member
         owner="open-atmos",
         repo=repo,
         state="all",
         per_page=100,
-    ):  # pylint: disable=not-an-iterable
+    ):
         for item in page.items:
             res[item.number] = item.state
     return res
