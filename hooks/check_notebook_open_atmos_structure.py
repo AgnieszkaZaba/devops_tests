@@ -120,20 +120,15 @@ def expected_badges_for(
     ]
 
 
-def first_cell_lines(nb: NotebookNode) -> List[str]:
-    if not nb.cells or nb.cells[0].cell_type != "markdown":
-        return []
-    return [ln.strip() for ln in str(nb.cells[0].source).splitlines() if ln.strip()]
-
-
 def badges_match(
     actual_lines: Iterable[str], expected_lines: Iterable[str]
 ) -> Tuple[bool, str]:
     actual_set = {ln.strip() for ln in actual_lines}
     missing = [exp for exp in expected_lines if exp.strip() not in actual_set]
-    if not missing:
+    if missing:
+        return False, f"Missing badges: {missing}"
+    else:
         return True, ""
-    return False, f"Missing badges: {missing}"
 
 
 def test_notebook_has_at_least_three_cells(nb_path, nb) -> Iterable:
@@ -155,7 +150,15 @@ def test_first_cell_contains_three_badges(
     repo_owner,
     repo_root,
 ):
-    lines = first_cell_lines(nb)
+    if not ok:
+        yield cell_error(nb_path, 0, code="NB004", message=msg)
+
+    if not nb.cells or nb.cells[0].cell_type != "markdown":
+        lines = []
+    else:
+        lines = [
+            ln.strip() for ln in str(nb.cells[0].source).splitlines() if ln.strip()
+        ]
     expected = expected_badges_for(nb_path, repo_name, repo_owner, repo_root)
     ok, msg = badges_match(lines, expected)
     if not ok:

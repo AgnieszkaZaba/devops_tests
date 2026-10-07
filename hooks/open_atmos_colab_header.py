@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import re
 import nbformat
-from pygments.styles.dracula import yellow
 
 from .utils import cell_error
 
@@ -85,7 +84,6 @@ def check_colab_header(nb_path, nb, *, repo_name, fix, hook_version):
         header_source = build_header(repo_name, final_version)
         nb.cells.insert(2, nbformat.v4.new_code_cell(header_source))
         nbformat.write(nb, nb_path)
-        return
 
     header_cell = nb.cells[header_index]
     examples_version, main_version = extract_versions(header_cell.source, repo_name)

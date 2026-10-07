@@ -10,7 +10,6 @@ accept valid notebooks and raise on invalid ones.
 from nbformat.v4 import new_notebook, new_code_cell, new_markdown_cell
 
 from hooks import check_notebook_output as no
-from hooks import check_notebooks as cn
 from hooks import check_notebook_using_jupyter_utils as nuju
 
 
@@ -27,7 +26,7 @@ def test_good_notebook_passes_all_checks(tmp_path):
     )
     assert no.test_cell_contains_output(tmp_path, nb)
     assert no.test_no_errors_or_warnings_in_output(tmp_path, nb)
-    assert cn.test_jetbrains_bug_py_66491(tmp_path, nb)
+    assert no.test_jetbrains_bug_py_66491(tmp_path, nb)
     assert nuju.test_show_plot_used_instead_of_matplotlib(tmp_path, nb)
     assert nuju.test_show_anim_used_instead_of_matplotlib(tmp_path, nb)
 
@@ -93,6 +92,6 @@ def test_missing_execution_count_key_raises(tmp_path):
         cells=[new_code_cell(source="1+1", execution_count=1, outputs=[])]
     )
     del nb.cells[0]["execution_count"]
-    errors = list(cn.test_jetbrains_bug_py_66491(tmp_path, nb))
+    errors = list(no.test_jetbrains_bug_py_66491(tmp_path, nb))
     assert len(errors) == 1
     assert errors[0].code == "NB000"

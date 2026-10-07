@@ -5,9 +5,8 @@ Utils functions to reuse in different parts of the codebase
 import os
 import pathlib
 from pathlib import Path
-from git import Git
-
 from dataclasses import dataclass
+from git import Git
 import nbformat
 
 
